@@ -17,7 +17,7 @@ export default function AuthCallback() {
       .then(user => {
         if (!mounted) return
         toast.success('Welcome!')
-        navigate(getHomeRoute(user?.role))
+        navigate(getHomeRoute(user?.role), { replace: true })
       })
       .catch(err => {
         if (!mounted) return

@@ -21,7 +21,7 @@ export default function Register() {
     try {
       const user = await register(form)
       toast.success('Account created!')
-      navigate(getHomeRoute(user?.role))
+      navigate(getHomeRoute(user?.role), { replace: true })
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed')
     } finally {

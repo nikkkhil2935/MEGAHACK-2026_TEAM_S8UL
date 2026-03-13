@@ -8,30 +8,40 @@ const { ROLES } = require('../constants');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5_000_000 } });
 
 router.post('/register', async (req, res) => {
-  const { email, password, full_name, role = ROLES.CANDIDATE, company_name } = req.body;
+  try {
+    const { email, password, full_name, role = ROLES.CANDIDATE, company_name } = req.body;
 
-  const { data, error } = await supabase.auth.admin.createUser({
-    email, password, email_confirm: true,
-  });
-  if (error) return res.status(400).json({ error: error.message });
+    const { data, error } = await supabase.auth.admin.createUser({
+      email, password, email_confirm: true,
+    });
+    if (error) return res.status(400).json({ error: error.message });
 
-  const userId = data.user.id;
-  const profile = await createOrGetUserProfile(userId, email, full_name, role, company_name);
-  const token = generateAuthToken(userId);
-  res.json({ token, user: profile });
+    const userId = data.user.id;
+    const profile = await createOrGetUserProfile(userId, email, full_name, role, company_name);
+    const token = generateAuthToken(userId);
+    res.json({ token, user: profile });
+  } catch (err) {
+    console.error('Register error:', err.message);
+    res.status(500).json({ error: 'Registration failed' });
+  }
 });
 
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    console.error('Login error:', error.message);
-    return res.status(401).json({ error: 'Invalid credentials' });
-  }
+  try {
+    const { email, password } = req.body;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      console.error('Login error:', error.message);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-  const profile = await getUserProfile(data.user.id);
-  const token = generateAuthToken(data.user.id);
-  res.json({ token, user: profile });
+    const profile = await getUserProfile(data.user.id);
+    const token = generateAuthToken(data.user.id);
+    res.json({ token, user: profile });
+  } catch (err) {
+    console.error('Login error:', err.message);
+    res.status(500).json({ error: 'Login failed' });
+  }
 });
 
 router.get('/me', authenticate, (req, res) => res.json({ user: req.user }));

@@ -34,6 +34,12 @@ function PrivateRoute({ children }) {
   return token ? children : <Navigate to="/login" />
 }
 
+function GuestRoute({ children }) {
+  const { token, user } = useAuthStore()
+  if (token) return <Navigate to={user?.role === 'recruiter' ? '/recruiter' : '/dashboard'} />
+  return children
+}
+
 function RootRedirect() {
   const { user } = useAuthStore()
   return <Navigate to={user?.role === 'recruiter' ? '/recruiter' : '/dashboard'} />
@@ -60,9 +66,9 @@ export default function App() {
         <main className={token ? "flex-1 overflow-y-auto min-w-0 relative" : "w-full"}>
           <Routes>
             <Route path="/" element={token ? <RootRedirect /> : <Landing />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
             <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
             <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
             <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
             <Route path="/jobs" element={<PrivateRoute><Jobs /></PrivateRoute>} />

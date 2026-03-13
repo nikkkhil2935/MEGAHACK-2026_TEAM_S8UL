@@ -16,7 +16,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   r => r,
   err => {
-    if (err.response?.status === 401) window.location.href = '/login'
+    const url = err.config?.url || ''
+    // Don't redirect on auth endpoints — let the login/register page handle errors
+    if (err.response?.status === 401 && !url.includes('/auth/')) {
+      localStorage.removeItem('careerbridge-auth')
+      window.location.href = '/login'
+    }
     if (err.response?.status === 429) toast.error('Rate limit hit — wait 1 minute')
     return Promise.reject(err)
   }
