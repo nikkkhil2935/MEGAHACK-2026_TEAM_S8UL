@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './store/auth'
+import { useThemeStore } from './store/theme'
 import Navbar from './components/layout/Navbar'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
@@ -33,12 +35,17 @@ function RootRedirect() {
 export default function App() {
   const { token } = useAuthStore()
 
+  useEffect(() => {
+    useThemeStore.getState().initTheme()
+  }, [])
+
   return (
     <>
       <Toaster
         position="top-right"
         toastOptions={{
-          style: { background: '#1f2937', color: '#f3f4f6', border: '1px solid rgba(255,255,255,0.1)' }
+          style: { background: 'var(--color-surface-700)', color: 'inherit', border: '1px solid rgba(128,128,128,0.15)', borderRadius: '12px', fontSize: '13px' },
+          duration: 3000,
         }}
       />
       {token && <Navbar />}

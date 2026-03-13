@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
-import { LayoutDashboard, Briefcase, Mic, User, LogOut, History, Map, MessageCircle, Building2, PlusCircle, Menu, X } from 'lucide-react'
+import { useThemeStore } from '../../store/theme'
+import { LayoutDashboard, Briefcase, Mic, User, LogOut, History, Map, MessageCircle, Building2, PlusCircle, Menu, X, Sun, Moon } from 'lucide-react'
 
 export default function Navbar() {
   const { user, logout } = useAuthStore()
+  const { theme, toggleTheme } = useThemeStore()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -58,6 +60,12 @@ export default function Navbar() {
             {user?.full_name || user?.email}
           </span>
 
+          <button onClick={toggleTheme}
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-surface-700 transition-colors cursor-pointer"
+            aria-label="Toggle theme">
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+
           <button onClick={handleLogout}
             className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer">
             <LogOut size={15} />
@@ -84,6 +92,11 @@ export default function Navbar() {
           <div className="h-px bg-white/5 my-2" />
           <div className="flex items-center justify-between px-3 py-2">
             <span className="text-xs text-gray-500">{user?.full_name || user?.email}</span>
+            <button onClick={toggleTheme}
+              className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-surface-700 transition-colors cursor-pointer"
+              aria-label="Toggle theme">
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
             <button onClick={handleLogout}
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer">
               <LogOut size={14} /> Logout

@@ -15,24 +15,42 @@ async function generateQuestions({ candidateProfile, jobData, type, difficulty, 
     : '';
 
   return groqJSON(
-    `You are an expert technical interviewer at a top tech company.
-Generate exactly 10 interview questions tailored to this specific candidate's background.
-IMPORTANT: Reference their actual projects and technologies by name in your questions.
-Mix: 4 technical (test depth), 3 behavioral (STAR framework), 2 situational (hypothetical scenarios), 1 motivation.
-Difficulty level: ${difficulty}.
+    `You are an elite technical interviewer at Google/Meta level.
+You NEVER ask generic questions like "tell me about yourself" or "what are your strengths".
+Every single question MUST reference specific information from the candidate's profile.
+You create questions that test DEPTH of knowledge, not surface-level awareness.
+Generate exactly 10 interview questions.
+Mix: ${type === 'technical' ? '7 technical, 2 behavioral, 1 system design' : type === 'behavioral' ? '2 technical, 6 behavioral, 2 situational' : type === 'hr' ? '1 technical, 3 behavioral, 4 HR/culture, 2 motivation' : '4 technical, 3 behavioral, 2 situational, 1 motivation'}.
+Difficulty: ${difficulty} level.
 ${langInstruction}
-Questions must feel personal, not generic.`,
+The candidate should feel like you actually READ their profile and know their work.`,
 
     `CANDIDATE PROFILE:
 - Name: ${candidateProfile.name || 'Candidate'}
-- Skills: ${candidateProfile.skills?.map(s => s.name).join(', ') || 'Not specified'}
-- Top Projects: ${candidateProfile.projects?.slice(0, 3).map(p => `${p.name} (${p.tech?.join(', ')})`).join('; ') || 'Not specified'}
-- Experience: ${candidateProfile.experience?.slice(0, 2).map(e => `${e.role} at ${e.company}`).join('; ') || 'Not specified'}
+- Headline: ${candidateProfile.headline || 'Software Developer'}
 - Total Experience: ${Math.round((candidateProfile.total_experience_months || 0) / 12)} years
+- Skills (${candidateProfile.skills?.length || 0}): ${candidateProfile.skills?.map(s => s.name || s).join(', ') || 'Not specified'}
+- Education: ${candidateProfile.education?.map(e => `${e.degree} from ${e.institution} (${e.year || 'N/A'})`).join('; ') || 'Not specified'}
 
-JOB:
+EXPERIENCE DETAILS:
+${candidateProfile.experience?.slice(0, 3).map(e => `• ${e.role} at ${e.company} (${e.duration || 'N/A'})${e.achievements?.length ? ': ' + e.achievements.join(', ') : ''}`).join('\n') || 'Not specified'}
+
+PROJECT DETAILS:
+${candidateProfile.projects?.slice(0, 4).map(p => `• ${p.name}: ${p.description || 'No description'} [Tech: ${(p.tech || p.tech_stack || []).join(', ')}]`).join('\n') || 'Not specified'}
+
+JOB TARGET:
 - Title: ${jobData?.title || 'Software Engineer'}
 - Required Skills: ${jobData?.required_skills?.map(s => s.name || s).join(', ') || 'General'}
+- Tech Stack: ${jobData?.tech_stack?.join(', ') || 'Not specified'}
+- Responsibilities: ${jobData?.responsibilities?.slice(0, 3).join('; ') || 'General engineering'}
+
+INSTRUCTIONS:
+1. Ask about SPECIFIC projects by name (e.g., "In your project ${candidateProfile.projects?.[0]?.name || 'X'}, how did you...")
+2. Probe the GAP between candidate's skills and job requirements
+3. Ask about real scenarios from their experience (e.g., "At ${candidateProfile.experience?.[0]?.company || 'your company'}, tell me about...")
+4. Include at least 2 questions about technologies they claim to know — test DEPTH not just awareness
+5. Ask about challenges, failures, and lessons learned — not just achievements
+6. Each question MUST be unique and NOT be a generic template question
 
 Return JSON array:
 [{

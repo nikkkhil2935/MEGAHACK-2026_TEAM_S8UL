@@ -54,18 +54,18 @@ export default function Dashboard() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Link to="/interview" className="glass-card p-5 hover:border-brand-500/30 transition-colors group">
-            <Mic size={20} className="text-brand-400 mb-3" />
+          <Link to="/interview" className="glass-card p-5 hover:border-brand-500/30 transition-all group hover:-translate-y-0.5">
+            <Mic size={20} className="text-brand-400 mb-3 group-hover:scale-110 transition-transform" />
             <h3 className="text-white font-semibold mb-1">Take Mock Interview</h3>
             <p className="text-gray-500 text-sm">AI-powered voice interview with cross-examination</p>
           </Link>
-          <Link to="/profile" className="glass-card p-5 hover:border-accent-500/30 transition-colors group">
-            <User size={20} className="text-accent-400 mb-3" />
+          <Link to="/profile" className="glass-card p-5 hover:border-accent-500/30 transition-all group hover:-translate-y-0.5">
+            <User size={20} className="text-accent-400 mb-3 group-hover:scale-110 transition-transform" />
             <h3 className="text-white font-semibold mb-1">Update Profile</h3>
             <p className="text-gray-500 text-sm">Import LinkedIn or upload resume</p>
           </Link>
-          <Link to="/jobs" className="glass-card p-5 hover:border-green-500/30 transition-colors group">
-            <Target size={20} className="text-green-400 mb-3" />
+          <Link to="/jobs" className="glass-card p-5 hover:border-green-500/30 transition-all group hover:-translate-y-0.5">
+            <Target size={20} className="text-green-400 mb-3 group-hover:scale-110 transition-transform" />
             <h3 className="text-white font-semibold mb-1">Browse Jobs</h3>
             <p className="text-gray-500 text-sm">See live match scores for every role</p>
           </Link>

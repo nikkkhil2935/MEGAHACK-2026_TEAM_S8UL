@@ -6,21 +6,21 @@
   --color-brand-100: #f5f5f5;
   --color-brand-200: #e5e5e5;
   --color-brand-400: #a3a3a3;
-  --color-brand-500: #ffffff;
-  --color-brand-600: #d4d4d4;
-  --color-brand-700: #a3a3a3;
+  --color-brand-500: #171717;
+  --color-brand-600: #262626;
+  --color-brand-700: #404040;
   --color-brand-800: #525252;
-  --color-brand-900: #171717;
+  --color-brand-900: #737373;
 
-  --color-accent-400: #d4d4d4;
-  --color-accent-500: #a3a3a3;
-  --color-accent-600: #737373;
+  --color-accent-400: #525252;
+  --color-accent-500: #404040;
+  --color-accent-600: #262626;
 
-  --color-surface-900: #000000;
-  --color-surface-800: #0a0a0a;
-  --color-surface-700: #171717;
-  --color-surface-600: #262626;
-  --color-surface-500: #404040;
+  --color-surface-900: #ffffff;
+  --color-surface-800: #fafafa;
+  --color-surface-700: #f5f5f5;
+  --color-surface-600: #e5e5e5;
+  --color-surface-500: #d4d4d4;
 
   --font-display: "Inter", "Plus Jakarta Sans", sans-serif;
   --font-body: "Inter", sans-serif;
@@ -45,36 +45,206 @@
   }
 }
 
-/* ─── Base ─── */
+/* ─── Base (light by default) ─── */
 body {
-  @apply bg-surface-900 text-gray-100 font-body antialiased;
+  @apply bg-surface-900 text-gray-900 font-body antialiased;
   min-height: 100vh;
   margin: 0;
+  transition: background-color 0.3s, color 0.3s;
 }
 
-/* ─── Components ─── */
+/* ─── Dark theme override ─── */
+:root[data-theme="dark"] {
+  --color-brand-500: #ffffff;
+  --color-brand-600: #e5e5e5;
+  --color-brand-700: #d4d4d4;
+  --color-brand-400: #a3a3a3;
+  --color-brand-200: #404040;
+  --color-brand-100: #262626;
+  --color-brand-50: #171717;
+
+  --color-accent-400: #d4d4d4;
+  --color-accent-500: #a3a3a3;
+  --color-accent-600: #737373;
+
+  --color-surface-900: #000000;
+  --color-surface-800: #0a0a0a;
+  --color-surface-700: #171717;
+  --color-surface-600: #262626;
+  --color-surface-500: #404040;
+}
+
+[data-theme="dark"] body {
+  @apply text-gray-100;
+}
+
+/* ─── Components (light default) ─── */
 .glass-card {
   @apply backdrop-blur-sm rounded-2xl;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.08);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+.glass-card:hover {
+  border-color: rgba(0,0,0,0.15);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+}
+[data-theme="dark"] .glass-card {
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.08);
 }
+[data-theme="dark"] .glass-card:hover {
+  border-color: rgba(255,255,255,0.15);
+  box-shadow: 0 4px 24px rgba(255,255,255,0.03);
+}
+
 .btn-primary {
-  @apply font-semibold px-6 py-3 rounded-xl transition-all duration-200 cursor-pointer active:scale-95;
+  @apply font-semibold px-6 py-3 rounded-xl transition-all duration-200 cursor-pointer;
+  background: #171717;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary:hover {
+  background: #262626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.btn-primary:active {
+  transform: scale(0.97) translateY(0);
+}
+[data-theme="dark"] .btn-primary {
   background: #ffffff;
   color: #000000;
 }
-.btn-primary:hover {
+[data-theme="dark"] .btn-primary:hover {
   background: #e5e5e5;
+  box-shadow: 0 4px 12px rgba(255,255,255,0.1);
 }
+
 .btn-ghost {
-  @apply bg-transparent hover:bg-surface-700 text-gray-300 cursor-pointer
-         px-6 py-3 rounded-xl transition-all duration-200 border border-white/10;
+  @apply bg-transparent hover:bg-surface-700 text-gray-700 cursor-pointer
+         px-6 py-3 rounded-xl transition-all duration-200 border border-black/10;
 }
+[data-theme="dark"] .btn-ghost {
+  @apply text-gray-300 border-white/10;
+}
+
 .input-field {
-  @apply w-full rounded-xl px-4 py-3 placeholder-gray-500
-         focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/50
+  @apply w-full rounded-xl px-4 py-3 placeholder-gray-400
+         focus:outline-none focus:ring-2 focus:ring-gray-900/20
          transition-colors duration-200;
+  background: #f5f5f5;
+  border: 1px solid rgba(0,0,0,0.1);
+  color: #171717;
+}
+[data-theme="dark"] .input-field {
   background: #0a0a0a;
   border: 1px solid rgba(255,255,255,0.1);
   color: white;
+}
+[data-theme="dark"] .input-field:focus {
+  @apply ring-white/20;
+}
+
+/* ─── Light mode text fixes ─── */
+[data-theme="light"] .text-white {
+  color: #171717;
+}
+[data-theme="light"] .text-gray-100 {
+  color: #262626;
+}
+[data-theme="light"] .text-gray-200 {
+  color: #404040;
+}
+[data-theme="light"] .text-gray-300 {
+  color: #525252;
+}
+[data-theme="light"] .text-gray-400 {
+  color: #737373;
+}
+[data-theme="light"] .text-gray-500 {
+  color: #a3a3a3;
+}
+/* But NOT inside elements that are actually dark */
+[data-theme="light"] .bg-black .text-white,
+[data-theme="light"] .bg-surface-900 .text-white,
+[data-theme="light"] [class*="bg-red-"] .text-white,
+[data-theme="light"] [class*="bg-brand-500"] .text-white,
+[data-theme="light"] .btn-primary .text-white,
+[data-theme="light"] [class*="bg-black"] .text-white {
+  color: #ffffff;
+}
+
+/* Light mode border fixes */
+[data-theme="light"] .border-white\/5 {
+  border-color: rgba(0,0,0,0.06);
+}
+[data-theme="light"] .border-white\/10 {
+  border-color: rgba(0,0,0,0.1);
+}
+
+/* Light mode bg fixes for elements using transparency */
+[data-theme="light"] .bg-brand-500\/20 {
+  background-color: rgba(23,23,23,0.08);
+}
+[data-theme="light"] .bg-brand-500\/10 {
+  background-color: rgba(23,23,23,0.05);
+}
+[data-theme="light"] .bg-brand-500\/15 {
+  background-color: rgba(23,23,23,0.06);
+}
+[data-theme="light"] .bg-accent-500\/20 {
+  background-color: rgba(64,64,64,0.08);
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: rgba(23,23,23,0.15);
+  color: inherit;
+}
+[data-theme="dark"] ::selection {
+  background: rgba(255,255,255,0.2);
+}
+
+/* ─── Custom scrollbar ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+
+/* ─── Focus visible ring ─── */
+*:focus-visible {
+  outline: 2px solid rgba(23,23,23,0.4);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+[data-theme="dark"] *:focus-visible {
+  outline-color: rgba(255,255,255,0.4);
+}
+
+/* ─── Skeleton loader ─── */
+.skeleton {
+  background: linear-gradient(90deg, rgba(0,0,0,0.06) 25%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.06) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Smooth link underlines ─── */
+a { transition: color 0.15s ease; }
+
+/* ─── Subtle page entry animation ─── */
+main, [data-page] {
+  animation: fadeIn 0.3s ease-out;
 }
