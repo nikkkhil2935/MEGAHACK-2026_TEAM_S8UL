@@ -11,13 +11,6 @@ import GoogleCalendarWidget from '../components/dashboard/GoogleCalendarWidget'
 
 export default function Dashboard() {
   const { user } = useAuthStore()
-export default function Dashboard() {
-  const { user } = useAuthStore()
-  const getStats = useGamificationStore(s => s.getStats)
-  const xp = useGamificationStore(s => s.xp)
-  const gamStats = getStats()
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
 
