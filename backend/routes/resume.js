@@ -1,10 +1,12 @@
-const router = require('express').Router();
+import express from 'express';
+import { cacheGet, cacheSet, cacheDel } from '../services/cache.js';
 const multer = require('multer');
 const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
 const { parseResume, abTestResumes } = require('../services/groq/resumeParser');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10_000_000 } });
+const router = express.Router();
 
 // Upload and parse resume
 router.post('/upload', authenticate, upload.single('resume'), async (req, res) => {
@@ -29,6 +31,10 @@ router.post('/upload', authenticate, upload.single('resume'), async (req, res) =
       updated_at: new Date()
     }, { onConflict: 'user_id' });
 
+    // Invalidate cache after upload
+    await cacheDel(`resume:parsed:${req.user.id}`);
+    await cacheDel(`jobs:list:${req.user.id}`);
+
     res.json({ parsed, resume_url: urlData.publicUrl });
   } catch (err) {
     console.error('Resume parse error:', err);
@@ -38,8 +44,12 @@ router.post('/upload', authenticate, upload.single('resume'), async (req, res) =
 
 // Get parsed profile
 router.get('/parsed', authenticate, async (req, res) => {
+  const cacheKey = `resume:parsed:${req.user.id}`;
+  const cached = await cacheGet(cacheKey);
+  if (cached) return res.json(cached);
   const { data } = await supabase.from('candidate_profiles')
     .select('*').eq('user_id', req.user.id).single();
+  await cacheSet(cacheKey, data, 21600);
   res.json(data);
 });
 
@@ -92,4 +102,4 @@ router.post('/ab-test', authenticate, upload.fields([
   }
 });
 
-module.exports = router;
+export default router;

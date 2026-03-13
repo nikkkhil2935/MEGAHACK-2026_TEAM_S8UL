@@ -1,4 +1,6 @@
-const router = require('express').Router();
+import express from 'express';
+import { cacheGet, cacheSet } from '../services/cache.js';
+const router = express.Router();
 const supabase = require('../db/supabase');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { groqJSON } = require('../services/groq/client');
@@ -26,6 +28,11 @@ router.post('/careerfit', async (req, res) => {
 router.get('/', authenticate, async (req, res) => {
   const { category, remote, search, page = 1, limit = 20 } = req.query;
 
+  // Redis cache check
+  const cacheKey = `jobs:list:${req.user.id}`;
+  const cached = await cacheGet(cacheKey);
+  if (cached) return res.json({ jobs: cached });
+
   let query = supabase.from('job_postings').select('*').eq('is_active', true);
   if (category) query = query.eq('job_category', category);
   if (remote) query = query.eq('remote_policy', remote);
@@ -43,18 +50,24 @@ router.get('/', authenticate, async (req, res) => {
         (jobs || []).map(j => matchCandidateToJob(profile.parsed_data, j.parsed_data || {})
           .then(m => ({ ...j, match_score: m.match_score, verdict: m.verdict })))
       );
-      return res.json(
-        matches.filter(r => r.status === 'fulfilled').map(r => r.value)
-      );
+      const jobsWithScores = matches.filter(r => r.status === 'fulfilled').map(r => r.value);
+      await cacheSet(cacheKey, jobsWithScores, 1800);
+      return res.json({ jobs: jobsWithScores });
     }
   }
+  await cacheSet(cacheKey, jobs || [], 1800);
   res.json(jobs || []);
 });
 
 // Single job
 router.get('/:id', authenticate, async (req, res) => {
+  const cacheKey = `job:detail:${req.params.id}:${req.user.id}`;
+  const cached = await cacheGet(cacheKey);
+  if (cached) return res.json(cached);
+
   const { data } = await supabase.from('job_postings')
     .select('*').eq('id', req.params.id).single();
+  await cacheSet(cacheKey, data, 3600);
   res.json(data);
 });
 
@@ -270,4 +283,4 @@ Return JSON:
   }
 });
 
-module.exports = router;
+export default router;

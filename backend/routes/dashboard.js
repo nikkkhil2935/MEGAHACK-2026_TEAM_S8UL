@@ -1,6 +1,29 @@
-const router = require('express').Router();
+import express from 'express';
+import redis from '../services/cache.js';
 const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
+const router = express.Router();
+
+// Cache stats endpoint
+router.get('/cache-stats', authenticate, async (req, res) => {
+  try {
+    const info = await redis.info('stats');
+    const hits   = parseInt(info.match(/keyspace_hits:(\d+)/)?.[1]   || 0);
+    const misses = parseInt(info.match(/keyspace_misses:(\d+)/)?.[1] || 0);
+    const total  = hits + misses;
+    res.json({
+      cache_hits:   hits,
+      cache_misses: misses,
+      hit_rate:     total > 0 ? `${Math.round((hits / total) * 100)}%` : '0%',
+      status:       'Redis connected ✅'
+    });
+  } catch {
+    res.json({
+      status:   'Redis unavailable ⚠️',
+      hit_rate: 'N/A'
+    });
+  }
+});
 
 router.get('/candidate', authenticate, async (req, res) => {
   const uid = req.user.id;

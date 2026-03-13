@@ -1,13 +1,18 @@
-const router   = require('express').Router();
+import express from 'express';
+import { cacheGet, cacheSet } from '../services/cache.js';
 const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
 const { generateWeeklyQuiz, evaluateQuizAnswers } = require('../services/groq/quizGenerator');
+const router = express.Router();
 
 // Generate a quiz for a roadmap week
 router.post('/generate', authenticate, async (req, res) => {
   try {
     const { roadmap_id, week } = req.body;
 
+    // Redis cache check
+    // For quiz: key is quiz:{skill}:{week}:{difficulty} (no userId)
+    // We'll use skill, week, and topics as key (difficulty not present in this code)
     const { data: roadmap } = await supabase.from('learning_roadmaps')
       .select('skill_name, path_data').eq('id', roadmap_id).single();
 
@@ -16,12 +21,17 @@ router.post('/generate', authenticate, async (req, res) => {
     const weekData = roadmap.path_data?.weeks?.find(w => w.week === week);
     if (!weekData) return res.status(404).json({ error: 'Week not found in roadmap' });
 
+    const cacheKey = `quiz:${roadmap.skill_name}:week${week}:${(weekData.topics || []).join(',')}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return res.json({ questions: cached, skill: roadmap.skill_name, week });
+
     const questions = await generateWeeklyQuiz({
       skill:  roadmap.skill_name,
       week,
       topics: weekData.topics || [],
     });
 
+    await cacheSet(cacheKey, questions, 43200);
     res.json({ questions, skill: roadmap.skill_name, week });
   } catch (err) {
     console.error('Quiz generate error:', err.message);
@@ -69,4 +79,4 @@ router.post('/submit', authenticate, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

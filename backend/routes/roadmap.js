@@ -1,18 +1,28 @@
-const router   = require('express').Router();
+import express from 'express';
+import { cacheGet, cacheSet } from '../services/cache.js';
 const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
 const { generateSkillRoadmap } = require('../services/groq/roadmapGenerator');
+const router = express.Router();
 
 // Generate roadmap for a skill
 router.post('/generate', authenticate, async (req, res) => {
   try {
     const { skill, candidate_level = 'beginner', target_level = 'intermediate', weekly_hours = 10 } = req.body;
 
+    // Redis cache check
+    const cacheKey = `roadmap:${req.user.id}:${skill}:${candidate_level}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return res.json({ roadmap: cached, cached: true });
+
     // Check if roadmap already exists
     const { data: existing } = await supabase.from('learning_roadmaps')
       .select('*').eq('candidate_id', req.user.id).eq('skill_name', skill).single();
 
-    if (existing) return res.json({ roadmap: existing, cached: true });
+    if (existing) {
+      await cacheSet(cacheKey, existing, 86400);
+      return res.json({ roadmap: existing, cached: true });
+    }
 
     const roadmap = await generateSkillRoadmap({
       skill, candidateLevel: candidate_level, targetLevel: target_level, weeklyHours: weekly_hours
@@ -27,6 +37,7 @@ router.post('/generate', authenticate, async (req, res) => {
       progress_percent:  0,
     }).select().single();
 
+    await cacheSet(cacheKey, data, 86400);
     res.json({ roadmap: data, cached: false });
   } catch (err) {
     console.error('Roadmap generate error:', err.message);
@@ -45,9 +56,14 @@ router.get('/', authenticate, async (req, res) => {
 
 // Get specific roadmap
 router.get('/:id', authenticate, async (req, res) => {
+  const cacheKey = `roadmap:detail:${req.params.id}`;
+  const cached = await cacheGet(cacheKey);
+  if (cached) return res.json(cached);
+
   const { data } = await supabase.from('learning_roadmaps')
     .select('*').eq('id', req.params.id).eq('candidate_id', req.user.id).single();
   if (!data) return res.status(404).json({ error: 'Roadmap not found' });
+  await cacheSet(cacheKey, data, 86400);
   res.json(data);
 });
 
@@ -87,4 +103,4 @@ router.post('/:id/next-week', authenticate, async (req, res) => {
   res.json({ current_week: next });
 });
 
-module.exports = router;
+export default router;
