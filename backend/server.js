@@ -34,8 +34,19 @@ app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 300 }));
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '15mb' }));
 
-// Health check
-app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+// Health check with env diagnostics
+app.get('/api/health', (req, res) => res.json({
+  status: 'ok',
+  timestamp: new Date().toISOString(),
+  env: {
+    SUPABASE_URL: !!process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_KEY,
+    JWT_SECRET: !!process.env.JWT_SECRET,
+    GROQ_API_KEY: !!process.env.GROQ_API_KEY,
+    FRONTEND_URL: process.env.FRONTEND_URL || '(not set)',
+    NODE_ENV: process.env.NODE_ENV || '(not set)',
+  }
+}));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -83,6 +94,13 @@ io.on('connection', (socket) => {
 });
 
 app.set('io', io);
+
+// Global error handler — return JSON instead of Express 5 default HTML
+app.use((err, req, res, _next) => {
+  console.error('Unhandled error:', err.message || err);
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({ error: err.message || 'Internal server error' });
+});
 
 server.listen(process.env.PORT || 5000, () =>
   console.log(`CareerBridge API ready on port ${process.env.PORT || 5000}`)
