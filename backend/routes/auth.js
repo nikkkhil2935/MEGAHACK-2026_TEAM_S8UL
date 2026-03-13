@@ -10,6 +10,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5_0
 router.post('/register', async (req, res) => {
   try {
     const { email, password, full_name, role = ROLES.CANDIDATE, company_name } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
     const { data, error } = await supabase.auth.admin.createUser({
       email, password, email_confirm: true,
@@ -21,8 +22,8 @@ router.post('/register', async (req, res) => {
     const token = generateAuthToken(userId);
     res.json({ token, user: profile });
   } catch (err) {
-    console.error('Register error:', err.message);
-    res.status(500).json({ error: 'Registration failed' });
+    console.error('Register error:', err.message || err);
+    res.status(500).json({ error: err.message || 'Registration failed' });
   }
 });
 
@@ -39,8 +40,8 @@ router.post('/login', async (req, res) => {
     const token = generateAuthToken(data.user.id);
     res.json({ token, user: profile });
   } catch (err) {
-    console.error('Login error:', err.message);
-    res.status(500).json({ error: 'Login failed' });
+    console.error('Login error:', err.message || err);
+    res.status(500).json({ error: err.message || 'Login failed' });
   }
 });
 
@@ -65,8 +66,8 @@ router.post('/oauth-callback', async (req, res) => {
     const token = generateAuthToken(authUser.id);
     res.json({ token, user: profile });
   } catch (err) {
-    console.error('OAuth callback error:', err.message);
-    res.status(500).json({ error: 'Authentication failed', code: 'OAUTH_CALLBACK_ERROR' });
+    console.error('OAuth callback error:', err.message || err);
+    res.status(500).json({ error: err.message || 'Authentication failed' });
   }
 });
 
