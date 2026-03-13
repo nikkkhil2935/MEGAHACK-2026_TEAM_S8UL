@@ -199,21 +199,69 @@ CREATE TABLE outreach_templates (
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ROW LEVEL SECURITY
-ALTER TABLE profiles           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE candidate_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE applications       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE interview_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tutor_chats        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE learning_roadmaps  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quiz_attempts      ENABLE ROW LEVEL SECURITY;
-ALTER TABLE outreach_templates ENABLE ROW LEVEL SECURITY;
+-- ROW LEVEL SECURITY (enable on ALL public tables)
+ALTER TABLE profiles             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE candidate_profiles   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE recruiter_profiles   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE job_postings         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE applications         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE interview_sessions   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scheduling_slots     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scheduled_interviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tutor_chats          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE skill_gap_reports    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE learning_roadmaps    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quiz_attempts        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE market_pulse         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE outreach_templates   ENABLE ROW LEVEL SECURITY;
 
+-- POLICIES
 CREATE POLICY "Users see own profile" ON profiles
   FOR ALL USING (auth.uid() = id);
 
 CREATE POLICY "Candidates see own data" ON candidate_profiles
   FOR ALL USING (auth.uid() = user_id);
 
+CREATE POLICY "Recruiters see own profile" ON recruiter_profiles
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Recruiters manage own jobs" ON job_postings
+  FOR ALL USING (auth.uid() = recruiter_id);
+CREATE POLICY "Anyone can view active jobs" ON job_postings
+  FOR SELECT USING (is_active = true);
+
+CREATE POLICY "Candidates see own applications" ON applications
+  FOR ALL USING (auth.uid() = candidate_id);
+CREATE POLICY "Recruiters see applications for their jobs" ON applications
+  FOR SELECT USING (job_id IN (SELECT id FROM job_postings WHERE recruiter_id = auth.uid()));
+CREATE POLICY "Recruiters update applications for their jobs" ON applications
+  FOR UPDATE USING (job_id IN (SELECT id FROM job_postings WHERE recruiter_id = auth.uid()));
+
 CREATE POLICY "Users see own interviews" ON interview_sessions
+  FOR ALL USING (auth.uid() = candidate_id);
+
+CREATE POLICY "Recruiters manage own slots" ON scheduling_slots
+  FOR ALL USING (auth.uid() = recruiter_id);
+CREATE POLICY "Candidates view available slots" ON scheduling_slots
+  FOR SELECT USING (true);
+
+CREATE POLICY "Users see own scheduled interviews" ON scheduled_interviews
+  FOR ALL USING (auth.uid() = candidate_id OR auth.uid() = recruiter_id);
+
+CREATE POLICY "Users see own tutor chats" ON tutor_chats
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Candidates see own skill reports" ON skill_gap_reports
+  FOR ALL USING (auth.uid() = candidate_id);
+
+CREATE POLICY "Candidates see own roadmaps" ON learning_roadmaps
+  FOR ALL USING (auth.uid() = candidate_id);
+
+CREATE POLICY "Candidates see own quiz attempts" ON quiz_attempts
+  FOR ALL USING (auth.uid() = candidate_id);
+
+CREATE POLICY "Anyone can view market pulse" ON market_pulse
+  FOR SELECT USING (true);
+
+CREATE POLICY "Candidates see own templates" ON outreach_templates
   FOR ALL USING (auth.uid() = candidate_id);

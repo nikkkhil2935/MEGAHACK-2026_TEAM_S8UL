@@ -124,20 +124,21 @@ export default function MessagingSchedulerGamified() {
 
   // ═══ SECTION: XP ENGINE ═══
   const addXp = useCallback((amount, label) => {
-    const prevLevel = getLevel(xp)
-    const newXp = xp + amount
-    setXp(newXp)
-    
+    setXp(prev => {
+      const newXp = prev + amount
+      const prevLevel = getLevel(prev)
+      const newLevel = getLevel(newXp)
+      if (newLevel.name !== prevLevel.name) {
+        setLevelUp(newLevel)
+        setTimeout(() => setLevelUp(null), 3000)
+      }
+      return newXp
+    })
+
     const id = ++toastIdRef.current
     setToasts(prev => [...prev, { id, text: `+${amount} XP · ${label}`, ts: Date.now() }])
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 2500)
-    
-    const newLevel = getLevel(newXp)
-    if (newLevel.name !== prevLevel.name) {
-      setLevelUp(newLevel)
-      setTimeout(() => setLevelUp(null), 3000)
-    }
-  }, [xp])
+  }, [])
 
   // Badge checking
   useEffect(() => {
