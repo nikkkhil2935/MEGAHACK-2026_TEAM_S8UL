@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { MessageCircle, Send, Plus, Trash2, Loader2, Bot, User, Sparkles } from 'lucide-react'
+import { MessageCircle, Send, Plus, Trash2, Loader2, Bot, User, Sparkles, Paperclip, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 
@@ -22,6 +22,9 @@ export default function Tutor() {
   const [sending, setSending] = useState(false)
   const [mode, setMode] = useState('general')
   const [loadingSessions, setLoadingSessions] = useState(true)
+  const [uploadedDocs, setUploadedDocs] = useState([])
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef(null)
   const bottomRef = useRef(null)
 
   useEffect(() => { fetchSessions() }, [])
@@ -41,6 +44,7 @@ export default function Tutor() {
       setSessions(prev => [data, ...prev])
       setActiveSession(data)
       setMessages([])
+      setUploadedDocs([])
     } catch { toast.error('Failed to create session') }
   }
 
@@ -48,7 +52,7 @@ export default function Tutor() {
     try {
       await api.delete(`/tutor/sessions/${id}`)
       setSessions(prev => prev.filter(s => s.id !== id))
-      if (activeSession?.id === id) { setActiveSession(null); setMessages([]) }
+      if (activeSession?.id === id) { setActiveSession(null); setMessages([]); setUploadedDocs([]) }
     } catch { toast.error('Failed to delete session') }
   }
 
@@ -71,6 +75,24 @@ export default function Tutor() {
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
     } catch { toast.error('Failed to get response') }
     finally { setSending(false) }
+  }
+
+  async function handleFileUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file || !activeSession) return
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('document', file)
+      formData.append('session_id', activeSession.id)
+      const { data } = await api.post('/tutor/upload-doc', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      setUploadedDocs(prev => [...prev, { name: data.name, chars: data.chars }])
+      setMessages(prev => [...prev, { role: 'assistant', content: `📄 Document uploaded: ${data.name} (${data.chars} chars)\nPreview: ${data.preview}...` }])
+      toast.success(`Uploaded ${data.name}`)
+    } catch { toast.error('Failed to upload document') }
+    finally { setUploading(false); if (fileInputRef.current) fileInputRef.current.value = '' }
   }
 
   return (
@@ -174,15 +196,34 @@ export default function Tutor() {
             </div>
 
             {/* Input */}
-            <form onSubmit={sendMessage} className="border-t border-white/5 p-4 flex gap-3">
-              <input value={input} onChange={e => setInput(e.target.value)}
-                placeholder={`Ask your ${MODES.find(m => m.id === mode)?.label?.toLowerCase()} anything...`}
-                className="flex-1 px-4 py-2.5 bg-surface-700 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500"
-                disabled={sending} />
-              <button type="submit" disabled={sending || !input.trim()}
-                className="px-4 py-2.5 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white rounded-lg transition-colors cursor-pointer">
-                <Send size={16} />
-              </button>
+            <form onSubmit={sendMessage} className="border-t border-white/5 p-4">
+              {uploadedDocs.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {uploadedDocs.map((doc, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-brand-500/10 text-brand-400 rounded-md text-xs">
+                      📄 {doc.name}
+                      <button type="button" onClick={() => setUploadedDocs(prev => prev.filter((_, j) => j !== i))} className="hover:text-red-400 cursor-pointer">
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-3">
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".pdf,.txt,.md,.csv,.json" className="hidden" />
+                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading || !activeSession}
+                  className="px-3 py-2.5 bg-surface-700 hover:bg-surface-600 disabled:opacity-50 text-gray-400 rounded-lg transition-colors cursor-pointer" title="Upload document">
+                  {uploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
+                </button>
+                <input value={input} onChange={e => setInput(e.target.value)}
+                  placeholder={`Ask your ${MODES.find(m => m.id === mode)?.label?.toLowerCase()} anything...`}
+                  className="flex-1 px-4 py-2.5 bg-surface-700 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500"
+                  disabled={sending} />
+                <button type="submit" disabled={sending || !input.trim()}
+                  className="px-4 py-2.5 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white rounded-lg transition-colors cursor-pointer">
+                  <Send size={16} />
+                </button>
+              </div>
             </form>
           </>
         )}

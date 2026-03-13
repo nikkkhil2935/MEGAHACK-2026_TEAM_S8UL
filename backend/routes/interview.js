@@ -4,12 +4,13 @@ const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
 const { generateQuestions, evaluateAnswer, generateReport } = require('../services/groq/interviewEngine');
 const { transcribeAudio } = require('../services/groq/client');
+const { groqJSON } = require('../services/groq/client');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25_000_000 } });
 
-// Start interview — generate questions
+// Start interview — generate questions (supports JD text/paste)
 router.post('/start', authenticate, async (req, res) => {
-  const { job_id, interview_type = 'mixed', difficulty = 'mid', language = 'en' } = req.body;
+  const { job_id, interview_type = 'mixed', difficulty = 'mid', language = 'en', jd_text } = req.body;
 
   const [{ data: profile }, jobResult] = await Promise.all([
     supabase.from('candidate_profiles').select('parsed_data').eq('user_id', req.user.id).single(),
@@ -22,9 +23,20 @@ router.post('/start', authenticate, async (req, res) => {
     return res.status(400).json({ error: 'Please upload your resume or import LinkedIn profile first.' });
   }
 
+  // If JD text provided, parse it into job data format
+  let jobData = jobResult?.data?.parsed_data || {};
+  if (jd_text && jd_text.trim()) {
+    try {
+      jobData = await groqJSON(
+        'You are a JD parser. Extract structured info from this job description. Return ONLY valid JSON.',
+        `Parse this job description:\n${jd_text}\n\nReturn JSON:\n{\n  "title": "job title",\n  "required_skills": [{"name": "skill"}],\n  "tech_stack": ["tech"],\n  "experience_years": {"min": 0, "max": 5},\n  "responsibilities": ["resp"]\n}`
+      );
+    } catch { /* use empty jobData if parse fails */ }
+  }
+
   const questions = await generateQuestions({
     candidateProfile: profile.parsed_data,
-    jobData: jobResult?.data?.parsed_data || {},
+    jobData,
     type: interview_type, difficulty, language
   });
 

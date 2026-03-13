@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, MicOff, Volume2, StopCircle, Clock, EyeOff, AlertTriangle,
-  Globe, Send, PhoneOff, User, Bot, Loader2
+  Globe, Send, PhoneOff, User, Bot, Loader2, Upload
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
@@ -41,79 +41,62 @@ function browserTTS(text, lang, onEnd) {
   window.speechSynthesis.speak(utterance)
 }
 
-/* ────── Speech Recognition Hook with live transcript ────── */
-function useSpeechRecognition(language = 'en') {
-  const [transcript, setTranscript] = useState('')
-  const [interimText, setInterimText] = useState('')
-  const [isListening, setIsListening] = useState(false)
-  const recRef = useRef(null)
-  const finalRef = useRef('')
-  const shouldListenRef = useRef(false)
-  const silenceTimerRef = useRef(null)
-  const langMap = { en: 'en-US', hi: 'hi-IN', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', ar: 'ar-SA', zh: 'zh-CN', pt: 'pt-BR' }
+/* ────── Audio Recorder Hook (MediaRecorder → Blob) ────── */
+function useAudioRecorder() {
+  const [isRecording, setIsRecording] = useState(false)
+  const [audioBlob, setAudioBlob] = useState(null)
+  const [recordingTime, setRecordingTime] = useState(0)
+  const mediaRecorderRef = useRef(null)
+  const chunksRef = useRef([])
+  const streamRef = useRef(null)
+  const timerRef = useRef(null)
 
-  const startListening = useCallback(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) { toast.error('Speech recognition not supported. Use Chrome.'); return }
-    finalRef.current = ''
-    setTranscript('')
-    setInterimText('')
-    shouldListenRef.current = true
-    recRef.current = new SR()
-    recRef.current.continuous = true
-    recRef.current.interimResults = true
-    recRef.current.lang = langMap[language] || 'en-US'
-
-    recRef.current.onresult = (e) => {
-      let final = '', interim = ''
-      for (let i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) final += e.results[i][0].transcript + ' '
-        else interim += e.results[i][0].transcript
+  const startRecording = useCallback(async () => {
+    try {
+      setAudioBlob(null)
+      chunksRef.current = []
+      setRecordingTime(0)
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+        : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : ''
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+      mediaRecorderRef.current = recorder
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' })
+        setAudioBlob(blob)
+        streamRef.current?.getTracks().forEach(t => t.stop())
+        streamRef.current = null
       }
-      if (final) finalRef.current = final
-      setTranscript((finalRef.current + interim).trim())
-      setInterimText(interim)
-
-      // Reset silence timer on any speech
-      clearTimeout(silenceTimerRef.current)
-      silenceTimerRef.current = setTimeout(() => {
-        if (shouldListenRef.current && finalRef.current.trim()) {
-          // User stopped speaking for 2.5s with content — auto-stop
-          stopListening()
-        }
-      }, 2500)
+      recorder.start(250) // collect chunks every 250ms
+      setIsRecording(true)
+      timerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000)
+    } catch (err) {
+      toast.error('Microphone access denied')
     }
-
-    recRef.current.onerror = (e) => {
-      if (e.error === 'no-speech' || e.error === 'aborted') return
-      toast.error(`Mic error: ${e.error}`)
-    }
-
-    recRef.current.onend = () => {
-      if (shouldListenRef.current) {
-        try { recRef.current?.start() } catch {}
-      }
-    }
-
-    recRef.current.start()
-    setIsListening(true)
-  }, [language])
-
-  const stopListening = useCallback(() => {
-    shouldListenRef.current = false
-    setIsListening(false)
-    clearTimeout(silenceTimerRef.current)
-    try { recRef.current?.stop() } catch {}
-    recRef.current = null
   }, [])
 
-  const reset = useCallback(() => {
-    finalRef.current = ''
-    setTranscript('')
-    setInterimText('')
+  const stopRecording = useCallback(() => {
+    clearInterval(timerRef.current)
+    setIsRecording(false)
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop()
+    }
   }, [])
 
-  return { transcript, interimText, isListening, startListening, stopListening, reset }
+  const resetRecording = useCallback(() => {
+    setAudioBlob(null)
+    setRecordingTime(0)
+    chunksRef.current = []
+  }, [])
+
+  useEffect(() => () => {
+    clearInterval(timerRef.current)
+    streamRef.current?.getTracks().forEach(t => t.stop())
+  }, [])
+
+  return { isRecording, audioBlob, recordingTime, startRecording, stopRecording, resetRecording }
 }
 
 /* ────── Main Interview Component ────── */
@@ -140,6 +123,8 @@ export default function Interview() {
   })
   const [inputMode, setInputMode] = useState('voice')
   const [textInput, setTextInput] = useState('')
+  const [jdText, setJdText] = useState('')
+  const [isTranscribing, setIsTranscribing] = useState(false)
 
   // Conversation log: { role: 'ai'|'user', text, time, type? }
   const [conversation, setConversation] = useState([])
@@ -153,23 +138,19 @@ export default function Interview() {
   const chatEndRef = useRef(null)
   const [cameraOn, setCameraOn] = useState(false)
 
-  const { transcript, interimText, isListening, startListening, stopListening, reset: resetSTT } = useSpeechRecognition(config.language)
+  const { isRecording, audioBlob, recordingTime, startRecording, stopRecording, resetRecording } = useAudioRecorder()
 
   // Auto-scroll chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [conversation, transcript])
+  }, [conversation])
 
-  // Auto-submit when STT stops (user finished speaking)
-  const prevListening = useRef(false)
+  // Auto-submit when recording stops and audioBlob is ready
   useEffect(() => {
-    if (prevListening.current && !isListening && transcript.trim() && phase === 'active' && !submitting) {
-      // User stopped speaking with content — auto submit after short delay
-      const t = setTimeout(() => submitAnswer(transcript), 300)
-      return () => clearTimeout(t)
+    if (audioBlob && phase === 'active' && !submitting && !isTranscribing) {
+      submitAudioAnswer(audioBlob)
     }
-    prevListening.current = isListening
-  }, [isListening])
+  }, [audioBlob])
 
   /* ── Camera ── */
   async function startCamera() {
@@ -235,7 +216,7 @@ export default function Interview() {
     try {
       await startCamera()
       setPhase('loading')
-      const { data } = await api.post('/interview/start', { ...config, interview_type: config.type })
+      const { data } = await api.post('/interview/start', { ...config, interview_type: config.type, jd_text: jdText || undefined })
       setSessionId(data.session_id)
       setQuestions(data.questions)
       startTimer()
@@ -264,15 +245,43 @@ export default function Interview() {
     setAiSpeaking(false)
   }
 
-  /* ── Submit Answer ── */
+  /* ── Submit Audio Answer via Groq Whisper ── */
+  async function submitAudioAnswer(blob) {
+    if (!blob || submitting || isTranscribing) return
+    setIsTranscribing(true)
+
+    try {
+      const formData = new FormData()
+      const ext = blob.type.includes('mp4') ? 'mp4' : 'webm'
+      formData.append('audio', blob, `answer.${ext}`)
+      formData.append('session_id', sessionId)
+      formData.append('question_index', currentQ)
+      formData.append('language', config.language)
+
+      const { data } = await api.post('/interview/answer/audio', formData)
+      setIsTranscribing(false)
+      resetRecording()
+
+      // Add the server's transcript as user message
+      addUserMessage(data.transcript || '(no speech detected)')
+      setAnswers(prev => [...prev, { transcript: data.transcript, evaluation: data.evaluation }])
+
+      await handleEvaluation(data)
+    } catch {
+      setIsTranscribing(false)
+      resetRecording()
+      toast.error('Error transcribing/evaluating answer')
+      addAIMessage("I'm sorry, there was a technical issue. Could you please repeat your answer?", 'error')
+    }
+  }
+
+  /* ── Submit Text Answer ── */
   async function submitAnswer(answerText) {
-    const text = answerText || (inputMode === 'voice' ? transcript : textInput)
+    const text = answerText || textInput
     if (!text?.trim() || submitting) return
     setSubmitting(true)
 
-    if (isListening) stopListening()
     addUserMessage(text)
-    resetSTT()
     setTextInput('')
 
     try {
@@ -281,52 +290,56 @@ export default function Interview() {
       })
 
       setAnswers(prev => [...prev, { transcript: text, evaluation: data.evaluation }])
-
-      // Brief acknowledgment
-      const score = data.evaluation?.overall_score
-      const ack = score >= 8 ? "Excellent answer!" :
-                  score >= 6 ? "Good answer, thank you." :
-                  score >= 4 ? "Thank you for that response." :
-                  "I see, thank you."
-
-      if (data.followup_question) {
-        addAIMessage(ack + " Let me follow up on that...", 'followup-intro')
-        setAiSpeaking(true)
-        await speak(ack, config.language)
-        setAiSpeaking(false)
-        setFollowupQ(data.followup_question)
-        addAIMessage(data.followup_question, 'followup')
-        setAiSpeaking(true)
-        await speak(data.followup_question, config.language)
-        setAiSpeaking(false)
-        setFollowupQ(null)
-        setSubmitting(false)
-        return
-      }
-
-      const nextQ = currentQ + 1
-      if (nextQ < questions.length) {
-        // Transition to next question
-        const transition = nextQ === questions.length - 1
-          ? "Alright, last question."
-          : ack + " Moving on..."
-        addAIMessage(transition, 'transition')
-        setAiSpeaking(true)
-        await speak(transition, config.language)
-        setAiSpeaking(false)
-
-        setCurrentQ(nextQ)
-        await askQuestion(questions[nextQ])
-      } else {
-        addAIMessage(ack + " That was the last question. Great job completing the interview! Let me generate your report.", 'closing')
-        setAiSpeaking(true)
-        await speak(ack + " That was the last question. Great job!", config.language)
-        setAiSpeaking(false)
-        await endInterview()
-      }
+      await handleEvaluation(data)
     } catch {
       toast.error('Error evaluating answer')
       addAIMessage("I'm sorry, there was a technical issue. Could you please repeat your answer?", 'error')
+    }
+    setSubmitting(false)
+  }
+
+  /* ── Handle evaluation response (shared by audio + text) ── */
+  async function handleEvaluation(data) {
+    setSubmitting(true)
+    const score = data.evaluation?.overall_score
+    const ack = score >= 8 ? "Excellent answer!" :
+                score >= 6 ? "Good answer, thank you." :
+                score >= 4 ? "Thank you for that response." :
+                "I see, thank you."
+
+    if (data.followup_question) {
+      addAIMessage(ack + " Let me follow up on that...", 'followup-intro')
+      setAiSpeaking(true)
+      await speak(ack, config.language)
+      setAiSpeaking(false)
+      setFollowupQ(data.followup_question)
+      addAIMessage(data.followup_question, 'followup')
+      setAiSpeaking(true)
+      await speak(data.followup_question, config.language)
+      setAiSpeaking(false)
+      setFollowupQ(null)
+      setSubmitting(false)
+      return
+    }
+
+    const nextQ = currentQ + 1
+    if (nextQ < questions.length) {
+      const transition = nextQ === questions.length - 1
+        ? "Alright, last question."
+        : ack + " Moving on..."
+      addAIMessage(transition, 'transition')
+      setAiSpeaking(true)
+      await speak(transition, config.language)
+      setAiSpeaking(false)
+
+      setCurrentQ(nextQ)
+      await askQuestion(questions[nextQ])
+    } else {
+      addAIMessage(ack + " That was the last question. Great job completing the interview! Let me generate your report.", 'closing')
+      setAiSpeaking(true)
+      await speak(ack + " That was the last question. Great job!", config.language)
+      setAiSpeaking(false)
+      await endInterview()
     }
     setSubmitting(false)
   }
@@ -356,7 +369,7 @@ export default function Interview() {
     } else {
       stopCamera()
       clearInterval(timerRef.current)
-      if (isListening) stopListening()
+      if (isRecording) stopRecording()
       navigate('/dashboard')
     }
   }
@@ -374,7 +387,7 @@ export default function Interview() {
           </div>
           <h1 className="text-2xl font-display font-bold text-white">AI Mock Interview</h1>
         </div>
-        <p className="text-gray-400 text-sm mb-8">A live one-to-one conversation with an AI interviewer. Speak naturally — your words are transcribed in real-time.</p>
+        <p className="text-gray-400 text-sm mb-8">A live one-to-one conversation with an AI interviewer. Record your answers — transcribed by Groq Whisper AI for high accuracy.</p>
 
         <div className="space-y-4 mb-6">
           <div>
@@ -413,14 +426,40 @@ export default function Interview() {
               <option value="zh">Mandarin</option><option value="pt">Portuguese</option>
             </select>
           </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block flex items-center gap-1"><Upload size={12} /> Job Description (optional)</label>
+            <textarea
+              className="input-field w-full h-24 resize-none text-xs"
+              placeholder="Paste the job description here to tailor interview questions..."
+              value={jdText}
+              onChange={e => setJdText(e.target.value)}
+            />
+            <label className="mt-2 flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+              <span>Or upload JD PDF:</span>
+              <input type="file" accept=".pdf,.txt" className="text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-surface-700 file:text-gray-300 cursor-pointer"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+                    toast('PDF uploaded — text will be extracted server-side', { icon: '📄' })
+                    const text = await file.text().catch(() => '')
+                    setJdText(prev => prev || text || `[PDF: ${file.name}]`)
+                  } else {
+                    const text = await file.text()
+                    setJdText(text)
+                  }
+                }} />
+            </label>
+          </div>
         </div>
 
         <div className="bg-surface-800 border border-white/5 rounded-xl p-4 mb-6 space-y-2">
           <p className="text-gray-300 text-sm font-medium">How it works:</p>
           <ul className="text-gray-400 text-xs space-y-1">
             <li>• AI interviewer asks questions by voice — like a real interview</li>
-            <li>• Your speech is transcribed live on screen as you speak</li>
-            <li>• Answer auto-submits when you pause speaking</li>
+            <li>• Tap to record your answer, tap again to finish</li>
+            <li>• Audio is transcribed by Groq Whisper AI (~95% accuracy)</li>
+            <li>• Or switch to text mode and type your answer</li>
             <li>• You can exit anytime with the end call button</li>
           </ul>
         </div>
@@ -477,10 +516,10 @@ export default function Interview() {
       </div>
 
       {/* ── Main Content: 70% Camera / 30% Conversation ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
 
         {/* LEFT: 70% — Video Feed */}
-        <div className="w-[70%] relative bg-black flex items-center justify-center">
+        <div className="w-full md:w-[70%] h-[40vh] md:h-auto relative bg-black flex items-center justify-center">
           <video ref={videoRef} autoPlay muted playsInline
             className="w-full h-full object-cover"
             style={{ transform: 'scaleX(-1)' }} />
@@ -501,11 +540,12 @@ export default function Interview() {
           )}
 
           {/* Recording indicator */}
-          {isListening && (
+          {isRecording && (
             <div className="absolute top-4 right-4 flex items-center gap-2 bg-red-600/90 backdrop-blur-sm rounded-full px-3 py-1">
               <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1 }}
                 className="w-2 h-2 bg-white rounded-full" />
               <span className="text-[10px] text-white font-medium">REC</span>
+              <span className="text-[10px] text-white/80 font-mono">{Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')}</span>
             </div>
           )}
 
@@ -529,28 +569,37 @@ export default function Interview() {
             </div>
           </div>
 
-          {/* Live transcription overlay on video */}
+          {/* Recording / Transcribing overlay on video */}
           <AnimatePresence>
-            {(isListening || transcript) && phase === 'active' && (
+            {(isRecording || isTranscribing) && phase === 'active' && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 className="absolute bottom-4 left-4 right-36 bg-black/70 backdrop-blur-md rounded-xl px-4 py-3">
-                <div className="flex items-center gap-2 mb-1">
-                  {isListening && (
-                    <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}
-                      className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-                  )}
-                  <span className="text-[10px] text-gray-400 font-medium">
-                    {isListening ? 'Transcribing your speech...' : 'Your answer'}
-                  </span>
-                </div>
-                <p className="text-white text-sm leading-relaxed">
-                  {transcript}
-                  {interimText && <span className="text-brand-300/60"> {interimText}</span>}
-                  {isListening && <motion.span animate={{ opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.8 }} className="text-brand-400">|</motion.span>}
-                </p>
+                {isRecording ? (
+                  <>
+                    <div className="flex items-center gap-2 mb-2">
+                      <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}
+                        className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+                      <span className="text-[10px] text-gray-400 font-medium">Recording your answer...</span>
+                      <span className="text-[10px] text-gray-500 font-mono ml-auto">{Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')}</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-1 h-6">
+                      {[...Array(12)].map((_, i) => (
+                        <motion.div key={i}
+                          animate={{ height: ['20%', `${40 + Math.random() * 60}%`, '20%'] }}
+                          transition={{ repeat: Infinity, duration: 0.4 + Math.random() * 0.4, delay: i * 0.05 }}
+                          className="w-1 bg-red-400 rounded-full" />
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Loader2 size={14} className="animate-spin text-brand-400" />
+                    <span className="text-xs text-gray-300">Transcribing with Whisper AI...</span>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -568,7 +617,7 @@ export default function Interview() {
         </div>
 
         {/* RIGHT: 30% — Conversation + Controls */}
-        <div className="w-[30%] border-l border-white/5 flex flex-col bg-surface-900 overflow-hidden">
+        <div className="w-full md:w-[30%] border-t md:border-l md:border-t-0 border-white/5 flex flex-col bg-surface-900 overflow-hidden">
           {/* Conversation log */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {conversation.map((msg, i) => (
@@ -598,16 +647,31 @@ export default function Interview() {
               </motion.div>
             ))}
 
-            {/* Show current live transcript in chat */}
-            {isListening && transcript && (
+            {/* Show recording indicator in chat */}
+            {isRecording && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 className="flex gap-2 flex-row-reverse">
                 <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5 bg-accent-500/20">
                   <User size={12} className="text-accent-400" />
                 </div>
-                <div className="max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed bg-brand-500/10 text-white/80 border border-brand-500/10 border-dashed">
-                  {transcript}
-                  <motion.span animate={{ opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.8 }} className="text-brand-400">|</motion.span>
+                <div className="max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed bg-red-500/10 text-white/80 border border-red-500/20 border-dashed flex items-center gap-2">
+                  <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 1 }}
+                    className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+                  <span>Recording... {Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')}</span>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Transcribing indicator in chat */}
+            {isTranscribing && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="flex gap-2 flex-row-reverse">
+                <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5 bg-accent-500/20">
+                  <User size={12} className="text-accent-400" />
+                </div>
+                <div className="max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed bg-brand-500/10 text-white/80 border border-brand-500/10 border-dashed flex items-center gap-2">
+                  <Loader2 size={12} className="animate-spin text-brand-400" />
+                  <span>Transcribing...</span>
                 </div>
               </motion.div>
             )}
@@ -633,7 +697,7 @@ export default function Interview() {
             )}
 
             {/* Submitting indicator */}
-            {submitting && (
+            {submitting && !isTranscribing && (
               <div className="flex items-center gap-2 justify-center py-2">
                 <Loader2 size={14} className="animate-spin text-brand-400" />
                 <span className="text-[10px] text-gray-400">Evaluating your answer...</span>
@@ -664,15 +728,17 @@ export default function Interview() {
               </div>
             ) : inputMode === 'voice' ? (
               <button
-                onClick={isListening ? () => stopListening() : startListening}
-                disabled={aiSpeaking || submitting}
+                onClick={isRecording ? () => stopRecording() : startRecording}
+                disabled={aiSpeaking || submitting || isTranscribing}
                 className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all cursor-pointer ${
-                  isListening
+                  isRecording
                     ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20'
                     : 'bg-brand-500 hover:bg-brand-400 text-white disabled:opacity-30'
                 }`}>
-                {isListening ? (
-                  <><MicOff size={16} /> Tap to finish</>
+                {isRecording ? (
+                  <><MicOff size={16} /> Tap to finish ({Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')})</>
+                ) : isTranscribing ? (
+                  <><Loader2 size={16} className="animate-spin" /> Transcribing...</>
                 ) : (
                   <><Mic size={16} /> {aiSpeaking ? 'AI is speaking...' : 'Tap to speak'}</>
                 )}
@@ -681,9 +747,9 @@ export default function Interview() {
               <form onSubmit={(e) => { e.preventDefault(); submitAnswer(textInput) }} className="flex gap-2">
                 <input type="text" value={textInput} onChange={e => setTextInput(e.target.value)}
                   placeholder="Type your answer..."
-                  disabled={aiSpeaking || submitting}
+                  disabled={aiSpeaking || submitting || isTranscribing}
                   className="flex-1 bg-surface-800 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 disabled:opacity-30" />
-                <button type="submit" disabled={!textInput.trim() || aiSpeaking || submitting}
+                <button type="submit" disabled={!textInput.trim() || aiSpeaking || submitting || isTranscribing}
                   className="px-3 py-2 bg-brand-500 hover:bg-brand-400 rounded-lg text-white transition-colors cursor-pointer disabled:opacity-30">
                   <Send size={14} />
                 </button>

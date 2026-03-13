@@ -25,6 +25,11 @@ function PrivateRoute({ children }) {
   return token ? children : <Navigate to="/login" />
 }
 
+function RootRedirect() {
+  const { user } = useAuthStore()
+  return <Navigate to={user?.role === 'recruiter' ? '/recruiter' : '/dashboard'} />
+}
+
 export default function App() {
   const { token } = useAuthStore()
 
@@ -38,7 +43,7 @@ export default function App() {
       />
       {token && <Navbar />}
       <Routes>
-        <Route path="/" element={token ? <Navigate to="/dashboard" /> : <Landing />} />
+        <Route path="/" element={token ? <RootRedirect /> : <Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />

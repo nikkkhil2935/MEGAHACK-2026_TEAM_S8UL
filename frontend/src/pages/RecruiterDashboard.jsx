@@ -32,13 +32,13 @@ export default function RecruiterDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-display font-bold text-white">Recruiter Dashboard</h1>
           <p className="text-sm text-gray-400 mt-1">Manage job postings and review candidates</p>
         </div>
         <Link to="/recruiter/post-job"
-          className="flex items-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-sm font-medium transition-colors">
+          className="w-full sm:w-auto flex items-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-sm font-medium transition-colors">
           <Plus size={16} /> Post New Job
         </Link>
       </div>

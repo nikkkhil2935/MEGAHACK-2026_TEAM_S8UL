@@ -23,7 +23,7 @@ export default function Landing() {
           <h1 className="text-5xl md:text-7xl font-display font-bold text-white leading-tight mb-6">
             Your AI Career
             <br />
-            <span className="bg-gradient-to-r from-brand-400 to-accent-500 bg-clip-text text-transparent">
+            <span className="text-white">
               Command Center
             </span>
           </h1>

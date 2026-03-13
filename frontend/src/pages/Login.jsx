@@ -16,9 +16,9 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
     try {
-      await login(email, password)
+      const user = await login(email, password)
       toast.success('Welcome back!')
-      navigate('/dashboard')
+      navigate(user?.role === 'recruiter' ? '/recruiter' : '/dashboard')
     } catch (err) {
       toast.error(err.response?.data?.error || 'Login failed')
     } finally {

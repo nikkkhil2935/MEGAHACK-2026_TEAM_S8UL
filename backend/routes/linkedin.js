@@ -1,26 +1,28 @@
 const router = require('express').Router();
 const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
-const { scrapeLinkedInProfile } = require('../services/linkedin/scraper');
-const { parseLinkedInData } = require('../services/linkedin/parser');
+const { groqJSON } = require('../services/groq/client');
 
 router.post('/import', authenticate, async (req, res) => {
-  const { linkedin_url } = req.body;
+  const { profile_text } = req.body;
 
-  if (!linkedin_url || !linkedin_url.includes('linkedin.com/in/')) {
-    return res.status(400).json({ error: 'Invalid LinkedIn URL. Must be a linkedin.com/in/ profile URL.' });
+  if (!profile_text || profile_text.trim().length < 20) {
+    return res.status(400).json({ error: 'Please paste a meaningful profile or professional summary (at least 20 characters).' });
   }
 
   try {
-    const scrapeResult = await scrapeLinkedInProfile(linkedin_url);
-    if (!scrapeResult.success) {
-      return res.status(422).json({
-        error: 'Could not scrape this LinkedIn profile. Make sure it is a PUBLIC profile.',
-        details: scrapeResult.error
-      });
-    }
-
-    const parsed = await parseLinkedInData(scrapeResult.data);
+    const parsed = await groqJSON(
+      `You are a profile parser. Extract structured professional profile data from the unstructured text provided by the user. Return a JSON object with these fields:
+- name (string)
+- headline (string)
+- summary (string)
+- skills (array of objects with "name" field)
+- experience (array of objects with "role", "company", "duration", "achievements" fields)
+- education (array of objects with "degree", "institution", "year" fields)
+- projects (array of objects with "name", "description", "tech_stack" fields)
+If a field cannot be determined, use null or an empty array as appropriate.`,
+      profile_text.trim()
+    );
 
     const checks = [
       parsed.name, parsed.headline, parsed.summary,
@@ -32,38 +34,17 @@ router.post('/import', authenticate, async (req, res) => {
 
     await supabase.from('candidate_profiles').upsert({
       user_id: req.user.id,
-      linkedin_url,
-      linkedin_data: scrapeResult.data,
       parsed_data: parsed,
       completeness_score: completeness,
       updated_at: new Date()
     }, { onConflict: 'user_id' });
 
-    res.json({ parsed, completeness, linkedin_url });
+    res.json({ parsed, completeness });
 
   } catch (err) {
-    console.error('LinkedIn import error:', err);
+    console.error('Profile import error:', err);
     res.status(500).json({ error: err.message });
   }
-});
-
-router.post('/refresh', authenticate, async (req, res) => {
-  const { data: profile } = await supabase.from('candidate_profiles')
-    .select('linkedin_url').eq('user_id', req.user.id).single();
-
-  if (!profile?.linkedin_url) {
-    return res.status(400).json({ error: 'No LinkedIn URL saved. Import first.' });
-  }
-
-  const scrapeResult = await scrapeLinkedInProfile(profile.linkedin_url);
-  if (!scrapeResult.success) return res.status(422).json({ error: scrapeResult.error });
-  const parsed = await parseLinkedInData(scrapeResult.data);
-
-  await supabase.from('candidate_profiles').update({
-    linkedin_data: scrapeResult.data, parsed_data: parsed, updated_at: new Date()
-  }).eq('user_id', req.user.id);
-
-  res.json({ parsed, refreshed: true });
 });
 
 module.exports = router;

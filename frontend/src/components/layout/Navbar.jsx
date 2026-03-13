@@ -1,10 +1,12 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
-import { LayoutDashboard, Briefcase, Mic, User, LogOut, History, Map, MessageCircle, Building2, PlusCircle } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Mic, User, LogOut, History, Map, MessageCircle, Building2, PlusCircle, Menu, X } from 'lucide-react'
 
 export default function Navbar() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleLogout = () => {
     logout()
@@ -40,18 +42,19 @@ export default function Navbar() {
           <span className="font-display font-semibold text-white text-sm hidden sm:block">CareerBridge AI</span>
         </Link>
 
-        <div className="flex items-center gap-1">
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-1">
           {links.map(({ to, icon: Icon, label }) => (
             <Link key={to} to={to}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-400 hover:text-white hover:bg-surface-700 transition-colors">
               <Icon size={15} />
-              <span className="hidden md:inline">{label}</span>
+              <span>{label}</span>
             </Link>
           ))}
 
           <div className="w-px h-6 bg-white/10 mx-2" />
 
-          <span className="text-xs text-gray-500 hidden sm:block mr-2">
+          <span className="text-xs text-gray-500 mr-2">
             {user?.full_name || user?.email}
           </span>
 
@@ -59,6 +62,33 @@ export default function Navbar() {
             className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer">
             <LogOut size={15} />
           </button>
+        </div>
+
+        {/* Mobile hamburger */}
+        <button onClick={() => setMobileOpen(o => !o)}
+          className="md:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-surface-700 transition-colors cursor-pointer">
+          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+
+      {/* Mobile dropdown */}
+      <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="px-4 py-3 space-y-1 border-t border-white/5 bg-surface-900/95 backdrop-blur-md">
+          {links.map(({ to, icon: Icon, label }) => (
+            <Link key={to} to={to} onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-surface-700 transition-colors">
+              <Icon size={16} />
+              {label}
+            </Link>
+          ))}
+          <div className="h-px bg-white/5 my-2" />
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className="text-xs text-gray-500">{user?.full_name || user?.email}</span>
+            <button onClick={handleLogout}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer">
+              <LogOut size={14} /> Logout
+            </button>
+          </div>
         </div>
       </div>
     </nav>

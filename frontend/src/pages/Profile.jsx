@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Upload, Link as LinkIcon, RefreshCw, Check, AlertCircle } from 'lucide-react'
+import { Upload, FileText, RefreshCw, Check, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 
@@ -9,26 +9,26 @@ export default function Profile() {
   const [loading, setLoading] = useState(true)
   const [importing, setImporting] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [linkedinUrl, setLinkedinUrl] = useState('')
+  const [profileText, setProfileText] = useState('')
   const fileRef = useRef(null)
 
   useEffect(() => {
     api.get('/resume/parsed').then(r => {
       setProfile(r.data)
-      setLinkedinUrl(r.data?.linkedin_url || '')
+      setProfileText('')
     }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
-  const importLinkedIn = async () => {
-    if (!linkedinUrl.includes('linkedin.com/in/')) {
-      toast.error('Enter a valid LinkedIn profile URL')
+  const importProfile = async () => {
+    if (!profileText.trim() || profileText.trim().length < 20) {
+      toast.error('Please paste a meaningful profile summary (at least 20 characters)')
       return
     }
     setImporting(true)
     try {
-      const { data } = await api.post('/linkedin/import', { linkedin_url: linkedinUrl })
+      const { data } = await api.post('/linkedin/import', { profile_text: profileText })
       setProfile(prev => ({ ...prev, parsed_data: data.parsed, completeness_score: data.completeness }))
-      toast.success('LinkedIn profile imported!')
+      toast.success('Profile imported successfully!')
     } catch (err) {
       toast.error(err.response?.data?.error || 'Import failed')
     } finally {
@@ -70,21 +70,20 @@ export default function Profile() {
 
           {/* Import Options */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            {/* LinkedIn Import */}
+            {/* Profile Text Import */}
             <div className="glass-card p-5">
               <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                <LinkIcon size={16} className="text-blue-400" />
-                Import from LinkedIn
+                <FileText size={16} className="text-blue-400" />
+                Import Profile
               </h3>
-              <div className="flex gap-2">
-                <input type="url" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)}
-                  className="input-field flex-1 text-sm" placeholder="https://linkedin.com/in/yourname" />
-                <button onClick={importLinkedIn} disabled={importing}
-                  className="btn-primary px-4 py-2 text-sm flex items-center gap-1 disabled:opacity-50">
-                  {importing ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
-                  Import
-                </button>
-              </div>
+              <textarea value={profileText} onChange={e => setProfileText(e.target.value)}
+                className="input-field text-sm mb-2 min-h-[120px] resize-y"
+                placeholder="Paste your LinkedIn profile text or any professional summary here" />
+              <button onClick={importProfile} disabled={importing}
+                className="btn-primary px-4 py-2 text-sm flex items-center gap-1 disabled:opacity-50 w-full justify-center">
+                {importing ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
+                Import
+              </button>
             </div>
 
             {/* Resume Upload */}

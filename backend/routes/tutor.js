@@ -2,6 +2,8 @@ const router   = require('express').Router();
 const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
 const { groqChat } = require('../services/groq/client');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10_000_000 } });
 
 const TUTOR_MODES = {
   general:   'You are a friendly, expert AI career coach for software engineers.',
@@ -40,7 +42,18 @@ router.post('/chat', authenticate, async (req, res) => {
       .select('preferred_language').eq('id', req.user.id).single();
 
     const lang = language || userProfile?.preferred_language || 'en';
-    const reply = await groqChat(messages, buildSystem(profile?.parsed_data, mode, lang));
+
+    let docContext = '';
+    if (session_id) {
+      const { data: sess } = await supabase.from('tutor_chats')
+        .select('context_docs').eq('id', session_id).single();
+      if (sess?.context_docs?.length) {
+        docContext = '\n\nDOCUMENT CONTEXT (reference these when answering):\n' +
+          sess.context_docs.map(d => `--- ${d.name} ---\n${d.text}`).join('\n\n');
+      }
+    }
+
+    const reply = await groqChat(messages, buildSystem(profile?.parsed_data, mode, lang) + docContext);
 
     // Save to session
     if (session_id) {
@@ -83,6 +96,50 @@ router.delete('/sessions/:id', authenticate, async (req, res) => {
   await supabase.from('tutor_chats')
     .delete().eq('id', req.params.id).eq('user_id', req.user.id);
   res.json({ deleted: true });
+});
+
+router.post('/upload-doc', authenticate, upload.single('document'), async (req, res) => {
+  try {
+    const { session_id } = req.body;
+    if (!session_id) return res.status(400).json({ error: 'session_id required' });
+
+    let text = '';
+    const mime = req.file.mimetype;
+
+    if (mime === 'application/pdf') {
+      try {
+        const pdfParse = require('pdf-parse');
+        const result = await pdfParse(req.file.buffer);
+        text = result.text || '';
+      } catch {
+        text = req.file.buffer.toString('utf-8').replace(/[^\x20-\x7E\n]/g, ' ');
+      }
+    } else {
+      text = req.file.buffer.toString('utf-8');
+    }
+
+    if (!text.trim()) return res.status(400).json({ error: 'Could not extract text from document' });
+
+    // Truncate to 8000 chars to fit in context
+    const docText = text.slice(0, 8000);
+
+    // Add to session's context_docs
+    const { data: session } = await supabase.from('tutor_chats')
+      .select('context_docs').eq('id', session_id).single();
+
+    const docs = [...(session?.context_docs || []), {
+      name: req.file.originalname,
+      text: docText,
+      uploaded_at: new Date()
+    }];
+
+    await supabase.from('tutor_chats').update({ context_docs: docs }).eq('id', session_id);
+
+    res.json({ name: req.file.originalname, chars: docText.length, preview: docText.slice(0, 200) });
+  } catch (err) {
+    console.error('Doc upload error:', err.message);
+    res.status(500).json({ error: 'Failed to process document' });
+  }
 });
 
 module.exports = router;

@@ -17,9 +17,9 @@ export default function Register() {
     e.preventDefault()
     setLoading(true)
     try {
-      await register(form)
+      const user = await register(form)
       toast.success('Account created!')
-      navigate('/dashboard')
+      navigate(user?.role === 'recruiter' ? '/recruiter' : '/dashboard')
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed')
     } finally {
