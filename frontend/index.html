@@ -16,6 +16,17 @@
     <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap" rel="stylesheet">
   </head>
   <body>
+    <script>
+      // Set theme before React loads to prevent flash
+      try {
+        var t = JSON.parse(localStorage.getItem('careerbridge-theme'));
+        var theme = (t && t.state && t.state.theme) || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        if (theme === 'dark') document.documentElement.classList.add('dark');
+      } catch(e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
