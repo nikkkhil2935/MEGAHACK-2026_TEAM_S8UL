@@ -4,12 +4,14 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, Loader2, Briefcase, Sparkles, CheckCircle, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import { useGamificationStore } from '../store/gamification'
 
 const REMOTE_OPTIONS = ['remote', 'hybrid', 'onsite']
 
 export default function PostJob() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const { awardXP } = useGamificationStore()
   const [form, setForm] = useState({
     title: '',
     company: '',
@@ -42,6 +44,7 @@ export default function PostJob() {
       }
       await api.post('/jobs', payload)
       toast.success('Job posted successfully!')
+      awardXP(50, 'Posted a new Job Opening! 📢')
       navigate('/recruiter')
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to post job')

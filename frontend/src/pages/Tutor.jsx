@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { MessageCircle, Send, Plus, Trash2, Loader2, Bot, User, Sparkles, Paperclip, X, Menu } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import { useGamificationStore } from '../store/gamification'
 
 const MODES = [
   { id: 'general', label: 'Career Coach', emoji: '💼' },
@@ -58,6 +59,9 @@ export default function Tutor() {
     } catch { toast.error('Failed to delete session') }
   }
 
+  // We need to import the gamification store
+  const { awardXP } = useGamificationStore()
+
   async function sendMessage(e) {
     e.preventDefault()
     if (!input.trim() || sending) return
@@ -75,6 +79,7 @@ export default function Tutor() {
         session_id: activeSession?.id,
       })
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+      awardXP(5, 'Engaged with AI Tutor 🧠') // Reward user for interacting
     } catch { toast.error('Failed to get response') }
     finally { setSending(false) }
   }

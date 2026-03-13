@@ -1,166 +1,209 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Mic, Briefcase, User, TrendingUp, Award, Target, BookOpen, GraduationCap, Flame } from 'lucide-react'
+import { Mic, Briefcase, User, Search, Bell, History, ArrowRight, Play, MoreHorizontal, Calendar as CalendarIcon, CheckCircle2, Flame, Award, ChevronLeft, ChevronRight, Video } from 'lucide-react'
 import api from '../services/api'
 import { useAuthStore } from '../store/auth'
 import { useGamificationStore } from '../store/gamification'
 import XPProgressCard from '../components/gamification/XPProgressCard'
 import BadgesDisplay from '../components/gamification/BadgesDisplay'
-
-function StatCard({ icon: Icon, label, value, color = 'text-brand-400' }) {
-  return (
-    <div className="glass-card p-5">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="w-8 h-8 rounded-lg bg-surface-700 flex items-center justify-center">
-          <Icon size={16} className={color} />
-        </div>
-        <span className="text-xs text-gray-500 uppercase tracking-wide font-semibold">{label}</span>
-      </div>
-      <div className={`text-3xl font-display font-bold ${color}`}>{value}</div>
-    </div>
-  )
-}
+import GoogleCalendarWidget from '../components/dashboard/GoogleCalendarWidget'
 
 export default function Dashboard() {
   const { user } = useAuthStore()
-  const xp = useGamificationStore(s => s.xp)
-  const totalXP = useGamificationStore(s => s.totalXP)
-  const badges = useGamificationStore(s => s.badges)
-  const streakDays = useGamificationStore(s => s.streakDays)
-  const interviewsCompleted = useGamificationStore(s => s.interviewsCompleted)
-  const quizzesCompleted = useGamificationStore(s => s.quizzesCompleted)
-  const roadmapsStarted = useGamificationStore(s => s.roadmapsStarted)
-  const gamStats = useMemo(() => useGamificationStore.getState().getStats(), [xp, totalXP, badges, streakDays, interviewsCompleted, quizzesCompleted, roadmapsStarted])
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // Gamification states
+  const { xp, totalXP, badges, streakDays, interviewsCompleted, quizzesCompleted, roadmapsStarted } = useGamificationStore()
+  const gamStats = useMemo(() => useGamificationStore.getState().getStats(), [xp, totalXP, badges, streakDays, interviewsCompleted, quizzesCompleted, roadmapsStarted])
+
   useEffect(() => {
-    api.get('/dashboard/candidate').then(r => setData(r.data)).catch(() => {}).finally(() => setLoading(false))
+    async function fetchDashboard() {
+      try {
+        const res = await api.get('/dashboard')
+        setData(res.data)
+      } catch (err) {
+        console.error('Dashboard fetch error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDashboard()
   }, [])
 
   if (loading) return (
-    <div className="min-h-screen bg-surface-900 flex items-center justify-center">
+    <div className="flex-1 flex items-center justify-center min-h-[60vh]">
       <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
     </div>
   )
 
+  const profileScore = data?.profile_strength || 0
+
   return (
-    <div className="min-h-screen bg-surface-900 p-6">
-      <div className="max-w-6xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-display font-bold text-foreground mb-1">
-            Welcome back, {user?.full_name?.split(' ')[0] || 'there'}
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Header / Greeting */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-display font-bold text-foreground mb-1 tracking-tight">
+            Hey {user?.full_name?.split(' ')[0] || 'Candidate'},
           </h1>
-          <p className="text-gray-400 text-sm mb-8">Here's your career overview.</p>
-        </motion.div>
+          <p className="text-foreground-muted text-sm font-medium">
+            It's sunny today and it's time to prepare 💪
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-brand-500/10 text-brand-600 dark:text-brand-400 px-4 py-2 rounded-xl font-bold text-sm">
+            <Flame size={16} className="text-orange-500 mr-2" />
+            {gamStats.streakDays || 0} Day Streak
+          </div>
+          <Link to="/interview" className="flex items-center gap-2 px-4 py-2 bg-foreground text-surface-900 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
+            <Video size={16} /> New Interview
+          </Link>
+        </div>
+      </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <StatCard icon={Briefcase} label="Applications" value={data?.total_applications || 0} />
-          <StatCard icon={Mic} label="Interviews" value={data?.total_interviews || 0} color="text-accent-400" />
-          <StatCard icon={TrendingUp} label="Avg Match" value={`${data?.avg_match_score || 0}%`} color="text-green-400" />
-          <StatCard icon={Award} label="Avg Interview" value={data?.avg_interview_score || 0} color="text-yellow-400" />
+      {/* Main Grid: Integrates Progress, Level, and Dashboard Widgets */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+        
+        {/* Left Column: Progress & Core Stats (Span 2) */}
+        <div className="xl:col-span-2 flex flex-col gap-6">
+          
+          {/* Top Row: My Level & Profile Strength */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Level & XP Card */}
+            <div className="bg-surface-800 border border-white/5 rounded-3xl p-6 shadow-sm flex flex-col justify-center">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-foreground">Current Level</h2>
+                <span className="text-2xl">{gamStats?.level?.emoji || '🌱'}</span>
+              </div>
+              <h3 className="text-2xl font-bold text-brand-500 dark:text-brand-400 mb-1">{gamStats?.level?.name || 'Fresher'}</h3>
+              <p className="text-sm text-foreground-muted mb-4">{gamStats.xp} / {gamStats.totalXP} XP</p>
+              <div className="w-full bg-surface-600 rounded-full h-2 mb-2">
+                <div className="bg-brand-500 h-2 rounded-full transition-all duration-1000" style={{ width: `${Math.round((gamStats.xp / gamStats.totalXP) * 100)}%` }}></div>
+              </div>
+              <p className="text-right text-xs text-foreground-muted">{Math.round((gamStats.xp / gamStats.totalXP) * 100)}% to next level</p>
+            </div>
+
+            {/* Profile & Interviews Card */}
+            <div className="bg-surface-800 border border-white/5 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
+               <div className="relative z-10">
+                 <div className="flex items-center justify-between mb-2">
+                   <h2 className="text-lg font-bold text-foreground">Profile Strength</h2>
+                   <div className="w-10 h-10 bg-brand-500/10 text-brand-500 rounded-xl flex items-center justify-center">
+                      <User size={20} />
+                   </div>
+                 </div>
+                 <div className="flex items-end gap-2 mb-6">
+                   <span className="text-4xl font-bold text-foreground">{Math.round(profileScore)}%</span>
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div className="bg-surface-900 border border-black/5 dark:border-white/5 rounded-2xl p-4">
+                     <p className="text-xs text-foreground-muted mb-1">Interviews</p>
+                     <p className="text-xl font-bold text-foreground">{data?.stats?.totalInterviews || 0}</p>
+                   </div>
+                   <div className="bg-surface-900 border border-black/5 dark:border-white/5 rounded-2xl p-4">
+                     <p className="text-xs text-foreground-muted mb-1">Applications</p>
+                     <p className="text-xl font-bold text-foreground">{data?.stats?.totalApplications || 0}</p>
+                   </div>
+                 </div>
+               </div>
+            </div>
+            
+          </div>
+
+          {/* Bottom Row: Activity & Recommendations (Section 2 & 3 merged) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+            
+            {/* Recommendations */}
+            <div className="bg-surface-800 border border-white/5 rounded-3xl p-6 flex flex-col min-h-[300px]">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-foreground">Recommendations</h3>
+                  <span className="bg-brand-500/10 text-brand-600 dark:text-brand-400 px-2 py-0.5 rounded-full text-xs font-bold">{data?.profile_nudges?.length || 0}</span>
+                </div>
+              </div>
+              <div className="space-y-3 flex-1 overflow-y-auto no-scrollbar pr-2">
+                {(data?.profile_nudges || []).length > 0 ? (
+                  data.profile_nudges.map((nudge, i) => (
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-2xl bg-surface-900 border border-black/5 dark:border-white/5 hover:border-brand-500/30 transition-colors">
+                      <div className="bg-orange-500/10 text-orange-500 p-2 rounded-lg shrink-0">
+                         <Award size={16} />
+                      </div>
+                      <div>
+                         <h4 className="text-sm font-bold text-foreground mb-0.5">{nudge.type === 'missing_field' ? 'Profile Incomplete' : 'Update Profile'}</h4>
+                         <p className="text-xs text-foreground-muted leading-relaxed">{nudge.message}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+                    <CheckCircle2 size={32} className="mb-2" />
+                    <p className="text-sm">All caught up!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="bg-surface-800 border border-white/5 rounded-3xl p-6 flex flex-col min-h-[300px]">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-foreground">Recent Activity</h3>
+                  <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full text-xs font-bold">{(data?.recent_interviews || []).length}</span>
+                </div>
+              </div>
+              <div className="space-y-3 flex-1 overflow-y-auto no-scrollbar pr-2">
+                {(data?.recent_interviews || []).length > 0 ? (
+                  data.recent_interviews.map((interview, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-2xl bg-surface-900 border border-black/5 dark:border-white/5 hover:border-blue-500/30 transition-colors">
+                      <div className="bg-blue-500/10 text-blue-500 p-2 rounded-lg shrink-0">
+                         <History size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-foreground truncate">{interview.job_title}</h4>
+                        <p className="text-xs text-foreground-muted truncate">{interview.company} • Score: {interview.score}</p>
+                      </div>
+                      <div className="text-xs text-foreground-muted shrink-0">
+                        {new Date(interview.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+                    <History size={32} className="mb-2" />
+                    <p className="text-sm">No activity yet</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
         </div>
 
-        {/* XP Progress */}
-        <XPProgressCard stats={gamStats} className="mb-8" />
+        {/* Right Column: Calendar & Badges */}
+        <div className="flex flex-col gap-6">
+          
+          {/* Calendar Widget */}
+          <div className="bg-surface-800 border border-white/5 rounded-3xl p-6 shadow-sm overflow-hidden">
+             <GoogleCalendarWidget interviews={data?.recent_interviews || []} />
+          </div>
 
-        {/* Profile Strength */}
-        {data?.profile_strength !== undefined && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="glass-card p-5 mb-8">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-foreground">Profile Strength</h3>
-              <span className={`text-sm font-bold ${(data.profile_strength || 0) >= 80 ? 'text-green-400' : (data.profile_strength || 0) >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
-                {data.profile_strength || 0}%
-              </span>
+          {/* Gamification Achievements */}
+          <div className="bg-surface-800 border border-white/5 rounded-3xl p-6 shadow-sm flex-1">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-bold text-foreground">Achievements ({gamStats.badges?.length || 0})</h4>
             </div>
-            <div className="w-full h-2 bg-surface-700 rounded-full overflow-hidden mb-3">
-              <div className={`h-full rounded-full transition-all duration-700 ${(data.profile_strength || 0) >= 80 ? 'bg-green-500' : (data.profile_strength || 0) >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                style={{ width: `${data.profile_strength || 0}%` }} />
-            </div>
-            {data.profile_nudges?.length > 0 && (
-              <div className="space-y-1.5">
-                {data.profile_nudges.map((nudge, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs text-gray-400">
-                    <div className="w-1 h-1 rounded-full bg-brand-400" />
-                    {nudge}
-                  </div>
-                ))}
-              </div>
+            <BadgesDisplay badges={gamStats.badges} limit={6} compact={true} />
+            {(!gamStats.badges || gamStats.badges.length === 0) && (
+               <div className="text-center text-foreground-muted text-sm py-8 bg-surface-900 rounded-2xl border border-dashed border-white/10">
+                 Complete tasks to earn badges!
+               </div>
             )}
-          </motion.div>
-        )}
-
-        {/* Interview Streak */}
-        {(data?.total_interviews || 0) > 0 && (
-          <div className="glass-card p-5 mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
-                <Flame size={20} className="text-orange-400" />
-              </div>
-              <div>
-                <div className="text-foreground font-semibold text-sm">
-                  🔥 {gamStats.streakDays} Day Practice Streak
-                </div>
-                <div className="text-xs text-gray-400">
-                  {data.total_interviews} interviews completed • Keep practicing daily!
-                </div>
-              </div>
-            </div>
           </div>
-        )}
 
-        {/* Achievements */}
-        <BadgesDisplay badges={gamStats.badges} className="mb-8" />
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Link to="/interview" className="glass-card p-5 hover:border-brand-500/30 transition-all group hover:-translate-y-0.5">
-            <Mic size={20} className="text-brand-400 mb-3 group-hover:scale-110 transition-transform" />
-            <h3 className="text-foreground font-semibold mb-1">Take Mock Interview</h3>
-            <p className="text-gray-500 text-sm">AI-powered voice interview with cross-examination</p>
-          </Link>
-          <Link to="/profile" className="glass-card p-5 hover:border-accent-500/30 transition-all group hover:-translate-y-0.5">
-            <User size={20} className="text-accent-400 mb-3 group-hover:scale-110 transition-transform" />
-            <h3 className="text-foreground font-semibold mb-1">Update Profile</h3>
-            <p className="text-gray-500 text-sm">Import LinkedIn or upload resume</p>
-          </Link>
-          <Link to="/jobs" className="glass-card p-5 hover:border-green-500/30 transition-all group hover:-translate-y-0.5">
-            <Target size={20} className="text-green-400 mb-3 group-hover:scale-110 transition-transform" />
-            <h3 className="text-foreground font-semibold mb-1">Browse Jobs</h3>
-            <p className="text-gray-500 text-sm">See live match scores for every role</p>
-          </Link>
         </div>
-
-        {/* Recent Interviews */}
-        {data?.recent_interviews?.length > 0 && (
-          <div className="glass-card p-5">
-            <h2 className="text-foreground font-semibold mb-4">Recent Interviews</h2>
-            <div className="space-y-3">
-              {data.recent_interviews.map(interview => (
-                <Link key={interview.id} to={`/interview/report/${interview.id}`}
-                  className="flex items-center justify-between p-3 bg-surface-700 rounded-xl hover:bg-surface-600 transition-colors">
-                  <div>
-                    <div className="text-sm text-foreground font-medium capitalize">
-                      {interview.job_postings?.title || interview.interview_type} Interview
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(interview.started_at).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-lg font-bold font-mono ${
-                      interview.overall_score >= 75 ? 'text-green-400' :
-                      interview.overall_score >= 50 ? 'text-yellow-400' : 'text-red-400'
-                    }`}>{interview.overall_score}/100</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

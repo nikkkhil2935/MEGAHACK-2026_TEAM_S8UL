@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { DollarSign, TrendingUp, Award, MapPin } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import { useGamificationStore } from '../store/gamification'
 
 const ROLES = [
   'Software Engineer', 'Frontend Developer', 'Backend Developer',
@@ -24,6 +25,7 @@ export default function SalaryPredictor() {
   })
   const [prediction, setPrediction] = useState(null)
   const [loading, setLoading] = useState(false)
+  const { awardXP } = useGamificationStore()
 
   const handlePredict = async () => {
     if (!form.targetRole || !form.industry) {
@@ -35,6 +37,7 @@ export default function SalaryPredictor() {
       const { data } = await api.post('/salary/predict', form)
       setPrediction(data.prediction)
       toast.success('Salary prediction ready!')
+      awardXP(25, 'Used Salary Predictor 💰')
     } catch (err) {
       const msg = err.response?.data?.error || 'Prediction failed. Make sure your profile is complete.'
       toast.error(msg)

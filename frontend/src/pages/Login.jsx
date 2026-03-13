@@ -39,16 +39,20 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-900 flex items-center justify-center p-6">
-      <div className="glass-card p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-brand-500 flex items-center justify-center text-white font-bold mx-auto mb-4">CB</div>
-          <h1 className="text-2xl font-display font-bold text-foreground">Welcome Back</h1>
-          <p className="text-gray-400 text-sm mt-1">Sign in to CareerBridge AI</p>
+    <div className="min-h-screen bg-[#f3f4f6] dark:bg-black/95 flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Decorative bubbles */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#c1ff72]/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl" />
+
+      <div className="bg-white dark:bg-surface-900 rounded-[32px] p-8 md:p-12 w-full max-w-md shadow-lg border border-black/5 dark:border-white/5 relative z-10 hover:shadow-xl transition-shadow">
+        <div className="text-center mb-10">
+          <div className="w-14 h-14 rounded-2xl bg-brand-500 flex items-center justify-center text-[#c1ff72] text-xl font-bold mx-auto mb-6 shadow-md hover:scale-105 transition-transform">CB</div>
+          <h1 className="text-3xl font-display font-medium text-foreground tracking-tight">Welcome Back</h1>
+          <p className="text-gray-500 text-sm mt-3 font-medium">Please enter your details to continue.</p>
         </div>
 
         <button onClick={handleGoogleLogin} disabled={googleLoading}
-          className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-black/10 dark:border-white/10 bg-surface-700 hover:bg-surface-600 text-foreground text-sm font-medium transition-colors mb-4 disabled:opacity-50 cursor-pointer">
+          className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-2xl border-2 border-gray-100 dark:border-surface-700 hover:border-gray-200 dark:hover:border-surface-600 bg-transparent text-foreground text-sm font-bold transition-all mb-8 disabled:opacity-50 cursor-pointer hover:shadow-sm">
           {googleLoading ? (
             <div className="w-4 h-4 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
           ) : (
@@ -62,40 +66,38 @@ export default function Login() {
           Continue with Google
         </button>
 
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
-          <span className="text-xs text-gray-500">or sign in with email</span>
-          <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
+        <div className="flex items-center gap-4 mb-8">
+          <div className="flex-1 h-px bg-gray-200 dark:bg-surface-700" />
+          <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Or</span>
+          <div className="flex-1 h-px bg-gray-200 dark:bg-surface-700" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <FormLabel>Email</FormLabel>
             <div className="relative">
-              <Mail size={16} className="absolute left-3 top-3.5 text-gray-500" />
               <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-                className="input-field pl-10" placeholder="you@example.com" required />
+                className="w-full rounded-2xl px-5 py-3.5 bg-[#f8f9fa] dark:bg-surface-700 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c1ff72] transition-colors border border-transparent focus:border-transparent text-foreground" 
+                placeholder="Email Address" required />
             </div>
           </div>
           <div>
-            <FormLabel>Password</FormLabel>
             <div className="relative">
-              <Lock size={16} className="absolute left-3 top-3.5 text-gray-500" />
               <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                className="input-field pl-10" placeholder="Your password" required />
+                className="w-full rounded-2xl px-5 py-3.5 bg-[#f8f9fa] dark:bg-surface-700 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c1ff72] transition-colors border border-transparent focus:border-transparent text-foreground" 
+                placeholder="Password" required />
             </div>
           </div>
 
           <button type="submit" disabled={loading}
-            className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50">
-            {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> :
-              <><LogIn size={16} /> Sign In</>}
+            className="w-full bg-[#1a1a1a] dark:bg-white text-white dark:text-black py-4 rounded-2xl text-sm font-bold shadow-md hover:bg-black dark:hover:bg-gray-100 transition-all hover:-translate-y-0.5 disabled:opacity-50 mt-4 cursor-pointer">
+            {loading ? <div className="w-4 h-4 border-2 border-white dark:border-black border-t-transparent rounded-full animate-spin mx-auto" /> :
+              'Sign in'}
           </button>
         </form>
 
-        <p className="text-center text-gray-500 text-sm mt-6">
+        <p className="text-center text-gray-500 text-sm mt-8 font-medium">
           Don't have an account?{' '}
-          <Link to="/register" className="text-brand-400 hover:text-brand-300 font-medium">Register</Link>
+          <Link to="/register" className="text-foreground hover:text-[#c1ff72] dark:hover:text-[#c1ff72] font-bold transition-colors">Sign up</Link>
         </p>
       </div>
     </div>

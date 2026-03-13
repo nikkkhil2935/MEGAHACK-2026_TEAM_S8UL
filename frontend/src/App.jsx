@@ -55,33 +55,37 @@ export default function App() {
           duration: 3000,
         }}
       />
-      {token && <Navbar />}
-      <Routes>
-        <Route path="/" element={token ? <RootRedirect /> : <Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-        <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-        <Route path="/jobs" element={<PrivateRoute><Jobs /></PrivateRoute>} />
-        <Route path="/jobs/:id" element={<PrivateRoute><JobDetail /></PrivateRoute>} />
-        <Route path="/interview" element={<PrivateRoute><Interview /></PrivateRoute>} />
-        <Route path="/interview/report/:id" element={<PrivateRoute><InterviewReport /></PrivateRoute>} />
-        <Route path="/interview/history" element={<PrivateRoute><InterviewHistory /></PrivateRoute>} />
-        <Route path="/roadmap" element={<PrivateRoute><Roadmap /></PrivateRoute>} />
-        <Route path="/roadmap/:id" element={<PrivateRoute><RoadmapDetail /></PrivateRoute>} />
-        <Route path="/quiz" element={<PrivateRoute><Quiz /></PrivateRoute>} />
-        <Route path="/tutor" element={<PrivateRoute><Tutor /></PrivateRoute>} />
-        <Route path="/salary" element={<PrivateRoute><SalaryPredictor /></PrivateRoute>} />
-        <Route path="/resume-improver" element={<PrivateRoute><ResumeImprover /></PrivateRoute>} />
-        <Route path="/github" element={<PrivateRoute><GitHubAnalyzer /></PrivateRoute>} />
-        <Route path="/recruiter" element={<PrivateRoute><RecruiterDashboard /></PrivateRoute>} />
-        <Route path="/recruiter/post-job" element={<PrivateRoute><PostJob /></PrivateRoute>} />
-        <Route path="/recruiter/analytics" element={<PrivateRoute><RecruiterAnalytics /></PrivateRoute>} />
-        <Route path="/recruiter/job/:id" element={<PrivateRoute><ViewJobApplications /></PrivateRoute>} />
-        <Route path="/messaging" element={<PrivateRoute><MessagingSchedulerGamified /></PrivateRoute>} />
-        <Route path="/ai-calling" element={<PrivateRoute><AICallingSystem /></PrivateRoute>} />
-      </Routes>
+      <div className={token ? "flex flex-col md:flex-row h-screen bg-[#f3f4f6] overflow-hidden" : ""}>
+        {token && <Navbar />}
+        <main className={token ? "flex-1 overflow-y-auto min-w-0 relative" : "w-full"}>
+          <Routes>
+            <Route path="/" element={token ? <RootRedirect /> : <Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+            <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+            <Route path="/jobs" element={<PrivateRoute><Jobs /></PrivateRoute>} />
+            <Route path="/jobs/:id" element={<PrivateRoute><JobDetail /></PrivateRoute>} />
+            <Route path="/interview" element={<PrivateRoute><Interview /></PrivateRoute>} />
+            <Route path="/interview/report/:id" element={<PrivateRoute><InterviewReport /></PrivateRoute>} />
+            <Route path="/interview/history" element={<PrivateRoute><InterviewHistory /></PrivateRoute>} />
+            <Route path="/roadmap" element={<PrivateRoute><Roadmap /></PrivateRoute>} />
+            <Route path="/roadmap/:id" element={<PrivateRoute><RoadmapDetail /></PrivateRoute>} />
+            <Route path="/quiz" element={<PrivateRoute><Quiz /></PrivateRoute>} />
+            <Route path="/tutor" element={<PrivateRoute><Tutor /></PrivateRoute>} />
+            <Route path="/salary" element={<PrivateRoute><SalaryPredictor /></PrivateRoute>} />
+            <Route path="/resume-improver" element={<PrivateRoute><ResumeImprover /></PrivateRoute>} />
+            <Route path="/github" element={<PrivateRoute><GitHubAnalyzer /></PrivateRoute>} />
+            <Route path="/recruiter" element={<PrivateRoute><RecruiterDashboard /></PrivateRoute>} />
+            <Route path="/recruiter/post-job" element={<PrivateRoute><PostJob /></PrivateRoute>} />
+            <Route path="/recruiter/analytics" element={<PrivateRoute><RecruiterAnalytics /></PrivateRoute>} />
+            <Route path="/recruiter/job/:id" element={<PrivateRoute><ViewJobApplications /></PrivateRoute>} />
+            <Route path="/messaging" element={<PrivateRoute><MessagingSchedulerGamified /></PrivateRoute>} />
+            <Route path="/ai-calling" element={<PrivateRoute><AICallingSystem /></PrivateRoute>} />
+          </Routes>
+        </main>
+      </div>
     </>
   )
 }

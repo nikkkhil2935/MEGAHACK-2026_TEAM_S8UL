@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { FileText, CheckCircle, AlertCircle, AlertTriangle, Copy, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import { useGamificationStore } from '../store/gamification'
 
 const SEVERITY_STYLES = {
   critical: { icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-500/10' },
@@ -14,6 +15,7 @@ export default function ResumeImprover() {
   const [analysis, setAnalysis] = useState(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
+  const { awardXP } = useGamificationStore()
 
   useEffect(() => {
     api.get('/resume-improver/latest')
@@ -29,6 +31,7 @@ export default function ResumeImprover() {
       const { data } = await api.post('/resume-improver/analyze', { jobDescription: jd })
       setAnalysis(data.analysis)
       toast.success('Resume analysis complete!')
+      awardXP(30, 'Improved your Resume 📄')
     } catch (err) {
       const msg = err.response?.data?.error || 'Analysis failed. Make sure your profile is complete.'
       toast.error(msg)

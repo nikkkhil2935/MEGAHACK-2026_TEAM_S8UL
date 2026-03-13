@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Github, Star, GitFork, ExternalLink, Trophy, AlertCircle, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import { useGamificationStore } from '../store/gamification'
 
 const COMPLEXITY_COLORS = {
   Beginner: 'text-green-500',
@@ -17,6 +18,7 @@ export default function GitHubAnalyzer() {
   const [loading, setLoading] = useState(false)
   const [merging, setMerging] = useState(false)
   const [activeRepo, setActiveRepo] = useState(null)
+  const { awardXP } = useGamificationStore()
 
   useEffect(() => {
     api.get('/github/latest')
@@ -37,6 +39,7 @@ export default function GitHubAnalyzer() {
       setAnalysis(data.analysis)
       setGithubUsername(data.githubUsername)
       toast.success('GitHub portfolio analyzed!')
+      awardXP(30, 'GitHub Profile Analyzed 🚀')
     } catch (err) {
       const msg = err.response?.data?.error || 'Analysis failed'
       toast.error(msg)
@@ -50,6 +53,7 @@ export default function GitHubAnalyzer() {
     try {
       const { data } = await api.post('/github/merge-projects')
       toast.success(`✅ ${data.totalProjects} projects merged into your profile!`)
+      awardXP(20, 'Synced GitHub Projects 🔄')
     } catch {
       toast.error('Merge failed')
     } finally {
