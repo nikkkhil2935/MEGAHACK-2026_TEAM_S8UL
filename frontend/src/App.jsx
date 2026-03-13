@@ -22,6 +22,8 @@ import RecruiterDashboard from './pages/RecruiterDashboard'
 import PostJob from './pages/PostJob'
 import ViewJobApplications from './pages/ViewJobApplications'
 import RecruiterAnalytics from './pages/RecruiterAnalytics'
+import MessagingSchedulerGamified from './pages/MessagingSchedulerGamified'
+import AICallingSystem from './pages/AICallingSystem'
 
 function PrivateRoute({ children }) {
   const { token } = useAuthStore()
@@ -69,6 +71,8 @@ export default function App() {
         <Route path="/recruiter/post-job" element={<PrivateRoute><PostJob /></PrivateRoute>} />
         <Route path="/recruiter/analytics" element={<PrivateRoute><RecruiterAnalytics /></PrivateRoute>} />
         <Route path="/recruiter/job/:id" element={<PrivateRoute><ViewJobApplications /></PrivateRoute>} />
+        <Route path="/messaging" element={<PrivateRoute><MessagingSchedulerGamified /></PrivateRoute>} />
+        <Route path="/ai-calling" element={<PrivateRoute><AICallingSystem /></PrivateRoute>} />
       </Routes>
     </>
   )

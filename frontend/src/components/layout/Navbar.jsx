@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
 import { useThemeStore } from '../../store/theme'
-import { LayoutDashboard, Briefcase, Mic, User, LogOut, History, Map, MessageCircle, Building2, PlusCircle, BarChart3, Menu, X, Sun, Moon } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Mic, User, LogOut, History, Map, MessageCircle, Building2, PlusCircle, BarChart3, Menu, X, Sun, Moon, MessageSquare, Phone } from 'lucide-react'
 
 export default function Navbar() {
   const { user, logout } = useAuthStore()
@@ -24,6 +24,7 @@ export default function Navbar() {
     { to: '/interview/history', icon: History, label: 'History' },
     { to: '/roadmap', icon: Map, label: 'Roadmap' },
     { to: '/tutor', icon: MessageCircle, label: 'Tutor' },
+    { to: '/messaging', icon: MessageSquare, label: 'Messages' },
     { to: '/profile', icon: User, label: 'Profile' },
   ]
 
@@ -31,6 +32,8 @@ export default function Navbar() {
     { to: '/recruiter', icon: Building2, label: 'Dashboard' },
     { to: '/recruiter/post-job', icon: PlusCircle, label: 'Post Job' },
     { to: '/recruiter/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/ai-calling', icon: Phone, label: 'AI Calls' },
+    { to: '/messaging', icon: MessageSquare, label: 'Messages' },
     { to: '/jobs', icon: Briefcase, label: 'Browse Jobs' },
     { to: '/profile', icon: User, label: 'Profile' },
   ]
