@@ -43,6 +43,7 @@ export default function Navbar() {
 
   const candidateLinks = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/profile', icon: User, label: 'Profile' },
     { to: '/jobs', icon: Briefcase, label: 'Workspace' },
     { to: '/interview', icon: Mic, label: 'Interviews' },
     { to: '/tutor', icon: Bot, label: 'AI Tutor' },
@@ -56,6 +57,7 @@ export default function Navbar() {
 
   const recruiterLinks = [
     { to: '/recruiter', icon: Building2, label: 'Dashboard' },
+    { to: '/profile', icon: User, label: 'Profile' },
     { to: '/recruiter/post-job', icon: PlusCircle, label: 'Post Job' },
     { to: '/recruiter/analytics', icon: BarChart3, label: 'Analytics' },
     { to: '/ai-calling', icon: Phone, label: 'AI Calls' },
@@ -88,8 +90,8 @@ export default function Navbar() {
           </Link>
 
           {/* User Profile Info (like reference) */}
-          <div className="flex flex-col items-center justify-center mb-8">
-            <div className="w-20 h-20 rounded-full bg-surface-700 border-2 border-surface-600 mb-3 overflow-hidden">
+          <Link to="/profile" className="flex flex-col items-center justify-center mb-8 group cursor-pointer">
+            <div className="w-20 h-20 rounded-full bg-surface-700 border-2 border-surface-600 mb-3 overflow-hidden group-hover:border-brand-500/50 transition-colors">
               {user?.avatar_url ? (
                 <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
               ) : (
@@ -100,7 +102,7 @@ export default function Navbar() {
             </div>
             <h2 className="text-foreground font-display font-bold text-lg">{user?.full_name || 'User'}</h2>
             <p className="text-gray-500 text-xs mt-1 capitalize">{user?.role || 'Candidate'}</p>
-          </div>
+          </Link>
         </div>
 
         {/* Navigation Links */}

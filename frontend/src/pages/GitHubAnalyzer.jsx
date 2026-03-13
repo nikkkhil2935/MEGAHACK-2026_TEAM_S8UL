@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Github, Star, GitFork, ExternalLink, Trophy, AlertCircle, Zap } from 'lucide-react'
+import { Github, Star, GitFork, ExternalLink, Trophy, AlertCircle, Zap, CheckCircle, XCircle, Shield } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useGamificationStore } from '../store/gamification'
@@ -170,6 +170,54 @@ export default function GitHubAnalyzer() {
                 </p>
                 <p className="text-sm text-foreground/70 mt-1">{analysis.bestRepoReason}</p>
               </div>
+            </div>
+          )}
+
+          {/* GitHub Verified Skills */}
+          {analysis.verifiedSkills?.length > 0 && (
+            <div className="glass-card p-5">
+              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-green-400" /> GitHub Verified Skills
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {analysis.verifiedSkills.map((vs, i) => (
+                  <div
+                    key={i}
+                    className={`group relative px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-1.5 cursor-default transition-all ${
+                      vs.verified
+                        ? 'bg-green-500/10 text-green-300 border-green-500/30'
+                        : 'bg-surface-700 text-foreground/50 border-white/5'
+                    }`}
+                  >
+                    {vs.verified ? (
+                      <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+                    ) : (
+                      <XCircle className="w-3.5 h-3.5 text-foreground/30" />
+                    )}
+                    {vs.skill}
+                    {vs.verified && vs.proficiencyLevel && vs.proficiencyLevel !== 'unknown' && (
+                      <span className="text-[10px] uppercase tracking-wider text-green-500/70 ml-1">
+                        {vs.proficiencyLevel}
+                      </span>
+                    )}
+                    {vs.verified && vs.evidence && (
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
+                        <div className="bg-surface-800 border border-surface-600 rounded-lg px-3 py-2 text-xs text-foreground/80 max-w-[220px] whitespace-normal shadow-xl">
+                          {vs.evidence}
+                          {vs.repos?.length > 0 && (
+                            <div className="mt-1 text-foreground/50">
+                              Repos: {vs.repos.join(', ')}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-foreground/40 mt-3">
+                Skills verified against code, READMEs, and topics in your GitHub repositories.
+              </p>
             </div>
           )}
 

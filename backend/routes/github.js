@@ -33,8 +33,18 @@ router.post('/analyze', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'GitHub username is required' });
     }
 
-    // 1. Fetch user info
+    // 1. Fetch user info + candidate's claimed skills
     const userInfo = await ghFetch(`/users/${githubUsername}`);
+
+    const { data: profileData } = await supabase
+      .from('candidate_profiles')
+      .select('parsed_data')
+      .eq('user_id', req.user.id)
+      .maybeSingle();
+
+    const claimedSkills = (profileData?.parsed_data?.skills || [])
+      .map(s => s.name || s)
+      .filter(Boolean);
 
     // 2. Fetch top repos (sorted by stars + recency)
     const allRepos = await ghFetch(
@@ -93,7 +103,7 @@ router.post('/analyze', authenticate, async (req, res) => {
 
     // 4. AI analysis via Groq
     const systemPrompt =
-      'You are a senior software engineer and open source contributor reviewing a developer\'s GitHub portfolio.';
+      'You are a senior software engineer and open source contributor reviewing a developer\'s GitHub portfolio. You also verify claimed skills against actual code evidence.';
 
     const userContent = `
 GITHUB USER: ${githubUsername}
@@ -104,7 +114,11 @@ Bio: ${userInfo.bio || 'Not set'}
 TOP ${repoDetails.length} REPOSITORIES:
 ${JSON.stringify(repoDetails, null, 2)}
 
+CANDIDATE'S CLAIMED SKILLS (from their resume/profile):
+${claimedSkills.length > 0 ? claimedSkills.join(', ') : 'No skills listed yet'}
+
 Analyze this portfolio as if you are preparing feedback for a Google interview panel.
+Also verify each claimed skill against the repositories — check languages, topics, READMEs, and descriptions for evidence.
 
 Respond ONLY with a JSON object (no markdown, no backticks) like:
 {
@@ -135,8 +149,30 @@ Respond ONLY with a JSON object (no markdown, no backticks) like:
       "techStack": ["React", "Node.js"],
       "url": "https://github.com/..."
     }
+  ],
+  "verifiedSkills": [
+    {
+      "skill": "React",
+      "verified": true,
+      "evidence": "Used as primary framework in 3 repos including project-x, with component architecture and hooks",
+      "repos": ["repo1", "repo2"],
+      "proficiencyLevel": "advanced"
+    },
+    {
+      "skill": "Python",
+      "verified": false,
+      "evidence": "Not demonstrated in any analyzed repository",
+      "repos": [],
+      "proficiencyLevel": "unknown"
+    }
   ]
 }
+
+IMPORTANT for verifiedSkills:
+- Check EVERY claimed skill: ${claimedSkills.join(', ')}
+- verified: true only if there is clear evidence in repo languages, topics, README, or description
+- proficiencyLevel: "beginner", "intermediate", "advanced", or "expert" based on complexity and usage
+- Also include any skills found in repos that are NOT in the claimed list with verified: true
 `;
 
     const analysis = await groqJSON(systemPrompt, userContent);
@@ -227,6 +263,21 @@ router.get('/latest', authenticate, async (req, res) => {
     });
   } catch {
     res.json({ analysis: null, githubUsername: null, analyzedAt: null });
+  }
+});
+
+// GET /api/github/verified-skills
+router.get('/verified-skills', authenticate, async (req, res) => {
+  try {
+    const { data } = await supabase
+      .from('github_analyses')
+      .select('analysis')
+      .eq('user_id', req.user.id)
+      .single();
+
+    res.json({ verifiedSkills: data?.analysis?.verifiedSkills || [] });
+  } catch {
+    res.json({ verifiedSkills: [] });
   }
 });
 

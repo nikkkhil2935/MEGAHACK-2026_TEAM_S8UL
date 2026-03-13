@@ -54,6 +54,19 @@ router.get('/candidate', authenticate, async (req, res) => {
   if (parsed.certifications?.length >= 1) strength += 5; else nudges.push('Add certifications to stand out');
   if (totalInterviews > 0) strength += 10; else nudges.push('Take your first mock interview to boost your profile');
 
+  // Flatten interview data for frontend consumption
+  const recentInterviews = (interviews.data || []).map(i => ({
+    id: i.id,
+    job_title: i.job_postings?.title || i.interview_type || 'Mock Interview',
+    company: 'Practice Session',
+    score: i.overall_score || 0,
+    integrity_score: i.integrity_score,
+    interview_type: i.interview_type,
+    language: i.language,
+    status: i.status,
+    created_at: i.started_at || i.ended_at || new Date().toISOString(),
+  }));
+
   res.json({
     total_applications: apps.data?.length || 0,
     total_interviews: totalInterviews,
@@ -62,9 +75,13 @@ router.get('/candidate', authenticate, async (req, res) => {
     skills_count: profile.data?.parsed_data?.skills?.length || 0,
     completeness_score: profile.data?.completeness_score || 0,
     applications: apps.data || [],
-    recent_interviews: interviews.data || [],
+    recent_interviews: recentInterviews,
+    stats: {
+      totalInterviews,
+      totalApplications: apps.data?.length || 0,
+    },
     profile_strength: Math.min(100, strength),
-    profile_nudges: nudges,
+    profile_nudges: nudges.map(msg => ({ type: 'missing_field', message: msg })),
     interview_streak: streak,
   });
 });

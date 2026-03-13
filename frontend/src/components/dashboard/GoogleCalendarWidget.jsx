@@ -144,26 +144,30 @@ export default function GoogleCalendarWidget({ interviews = [] }) {
           {/* Vertical Timeline Line */}
           <div className="absolute left-[35px] top-4 bottom-4 w-px bg-surface-700 border-l border-dashed border-surface-600" />
 
-          {interviews.length > 0 ? interviews.slice(0, 3).map((interview, i) => (
+          {interviews.length > 0 ? interviews.slice(0, 3).map((interview, i) => {
+             const dateStr = interview.created_at || interview.started_at;
+             const dateObj = dateStr ? new Date(dateStr) : null;
+             const isValidDate = dateObj && !isNaN(dateObj.getTime());
+             return (
              <motion.div key={i} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }} className="relative">
                <span className="absolute -left-12 top-4 text-[10px] font-bold text-foreground-muted">
-                 {new Date(interview.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                 {isValidDate ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                </span>
-               <div className={`rounded-2xl p-4 flex gap-4 ml-2 ${i % 2 === 0 ? 'bg-emerald-500/10' : 'bg-pink-500/10'}`}>  
-                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 ${i % 2 === 0 ? 'bg-emerald-500' : 'bg-pink-500'}`}>   
+               <div className={`rounded-2xl p-4 flex gap-4 ml-2 ${i % 2 === 0 ? 'bg-emerald-500/10' : 'bg-pink-500/10'}`}>
+                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 ${i % 2 === 0 ? 'bg-emerald-500' : 'bg-pink-500'}`}>
                    {i % 2 === 0 ? <Video size={14} /> : <CalendarIcon size={14} />}
                  </div>
                  <div>
                    <h4 className={`font-bold text-sm ${i % 2 === 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-pink-700 dark:text-pink-300'}`}>
-                     {interview.job_title}
+                     {interview.job_title || interview.interview_type || 'Mock Interview'}
                    </h4>
                    <p className={`text-xs font-medium ${i % 2 === 0 ? 'text-emerald-600/70 dark:text-emerald-400/70' : 'text-pink-600/70 dark:text-pink-400/70'}`}>
-                     {interview.company}
+                     {interview.company || 'Practice Session'} {isValidDate ? `• ${dateObj.toLocaleDateString()}` : ''}
                    </p>
                  </div>
                </div>
              </motion.div>
-          )) : (
+          )}) : (
             <div className="text-sm text-foreground-muted italic mt-6">No scheduled meetings.</div>
           )}
 

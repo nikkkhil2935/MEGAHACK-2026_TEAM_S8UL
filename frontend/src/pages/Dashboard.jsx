@@ -21,7 +21,7 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchDashboard() {
       try {
-        const res = await api.get('/dashboard')
+        const res = await api.get('/dashboard/candidate')
         setData(res.data)
       } catch (err) {
         console.error('Dashboard fetch error:', err)
@@ -162,11 +162,11 @@ export default function Dashboard() {
                          <History size={16} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-foreground truncate">{interview.job_title}</h4>
-                        <p className="text-xs text-foreground-muted truncate">{interview.company} • Score: {interview.score}</p>
+                        <h4 className="text-sm font-bold text-foreground truncate">{interview.job_title || interview.interview_type || 'Mock Interview'}</h4>
+                        <p className="text-xs text-foreground-muted truncate">{interview.company || 'Practice'} • Score: {interview.score ?? interview.overall_score ?? '—'}</p>
                       </div>
                       <div className="text-xs text-foreground-muted shrink-0">
-                        {new Date(interview.created_at).toLocaleDateString()}
+                        {interview.created_at ? new Date(interview.created_at).toLocaleDateString() : '—'}
                       </div>
                     </div>
                   ))
