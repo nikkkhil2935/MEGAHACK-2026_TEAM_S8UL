@@ -16,6 +16,9 @@ import Roadmap from './pages/Roadmap'
 import RoadmapDetail from './pages/RoadmapDetail'
 import Quiz from './pages/Quiz'
 import Tutor from './pages/Tutor'
+import RecruiterDashboard from './pages/RecruiterDashboard'
+import PostJob from './pages/PostJob'
+import ViewJobApplications from './pages/ViewJobApplications'
 
 function PrivateRoute({ children }) {
   const { token } = useAuthStore()
@@ -49,6 +52,9 @@ export default function App() {
         <Route path="/roadmap/:id" element={<PrivateRoute><RoadmapDetail /></PrivateRoute>} />
         <Route path="/quiz" element={<PrivateRoute><Quiz /></PrivateRoute>} />
         <Route path="/tutor" element={<PrivateRoute><Tutor /></PrivateRoute>} />
+        <Route path="/recruiter" element={<PrivateRoute><RecruiterDashboard /></PrivateRoute>} />
+        <Route path="/recruiter/post-job" element={<PrivateRoute><PostJob /></PrivateRoute>} />
+        <Route path="/recruiter/job/:id" element={<PrivateRoute><ViewJobApplications /></PrivateRoute>} />
       </Routes>
     </>
   )

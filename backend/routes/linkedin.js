@@ -37,7 +37,7 @@ router.post('/import', authenticate, async (req, res) => {
       parsed_data: parsed,
       completeness_score: completeness,
       updated_at: new Date()
-    });
+    }, { onConflict: 'user_id' });
 
     res.json({ parsed, completeness, linkedin_url });
 

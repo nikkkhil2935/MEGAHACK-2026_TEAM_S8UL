@@ -1,5 +1,5 @@
 const { groqJSON } = require('./client');
-const pdfParse = require('pdf-parse');
+const { PDFParse } = require('pdf-parse');
 
 const PARSE_SYSTEM = `You are an expert resume parser and career analyst.
 Extract ALL information from the resume text.
@@ -11,8 +11,10 @@ Return ONLY valid JSON — no extra text.`;
 
 async function extractText(buffer, mimetype) {
   if (mimetype === 'application/pdf') {
-    const { text } = await pdfParse(buffer);
-    return text;
+    const uint8 = new Uint8Array(buffer);
+    const parser = new PDFParse(uint8);
+    const result = await parser.getText();
+    return result.text || '';
   }
   return buffer.toString('utf-8');
 }

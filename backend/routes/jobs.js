@@ -95,6 +95,41 @@ router.get('/match/:id', authenticate, async (req, res) => {
   res.json(match);
 });
 
+// Recruiter: my jobs with applicant counts
+router.get('/recruiter/my-jobs', authenticate, requireRole('recruiter'), async (req, res) => {
+  const { data: jobs } = await supabase.from('job_postings')
+    .select('*').eq('recruiter_id', req.user.id).order('created_at', { ascending: false });
+
+  // Get applicant counts
+  const enriched = await Promise.all((jobs || []).map(async (job) => {
+    const { count } = await supabase.from('applications')
+      .select('*', { count: 'exact', head: true }).eq('job_id', job.id);
+    return { ...job, applicant_count: count || 0 };
+  }));
+
+  res.json(enriched);
+});
+
+// Recruiter: get applicants for a job
+router.get('/:id/applicants', authenticate, requireRole('recruiter'), async (req, res) => {
+  const { data: apps } = await supabase.from('applications')
+    .select('*, profiles:candidate_id(full_name, email)')
+    .eq('job_id', req.params.id).order('match_score', { ascending: false });
+
+  const enriched = (apps || []).map(a => ({
+    id: a.id,
+    name: a.profiles?.full_name,
+    email: a.profiles?.email,
+    match_score: a.match_score,
+    skills: a.match_data?.matching_skills || [],
+    experience: a.match_data?.experience_match,
+    interview_score: a.match_data?.interview_score,
+    applied_at: a.created_at,
+  }));
+
+  res.json(enriched);
+});
+
 // Almost qualified (55-74%)
 router.get('/almost/qualified', authenticate, async (req, res) => {
   const { data: profile } = await supabase.from('candidate_profiles')

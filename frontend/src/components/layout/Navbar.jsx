@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
-import { LayoutDashboard, Briefcase, Mic, User, LogOut, History, Map, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Mic, User, LogOut, History, Map, MessageCircle, Building2, PlusCircle } from 'lucide-react'
 
 export default function Navbar() {
   const { user, logout } = useAuthStore()
@@ -11,7 +11,9 @@ export default function Navbar() {
     navigate('/login')
   }
 
-  const links = [
+  const isRecruiter = user?.role === 'recruiter'
+
+  const candidateLinks = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/jobs', icon: Briefcase, label: 'Jobs' },
     { to: '/interview', icon: Mic, label: 'Interview' },
@@ -20,6 +22,15 @@ export default function Navbar() {
     { to: '/tutor', icon: MessageCircle, label: 'Tutor' },
     { to: '/profile', icon: User, label: 'Profile' },
   ]
+
+  const recruiterLinks = [
+    { to: '/recruiter', icon: Building2, label: 'Dashboard' },
+    { to: '/recruiter/post-job', icon: PlusCircle, label: 'Post Job' },
+    { to: '/jobs', icon: Briefcase, label: 'Browse Jobs' },
+    { to: '/profile', icon: User, label: 'Profile' },
+  ]
+
+  const links = isRecruiter ? recruiterLinks : candidateLinks
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/5 bg-surface-900/80 backdrop-blur-md">

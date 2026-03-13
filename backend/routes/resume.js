@@ -27,7 +27,7 @@ router.post('/upload', authenticate, upload.single('resume'), async (req, res) =
       resume_url: urlData.publicUrl,
       completeness_score: parsed.completeness_score,
       updated_at: new Date()
-    });
+    }, { onConflict: 'user_id' });
 
     res.json({ parsed, resume_url: urlData.publicUrl });
   } catch (err) {
