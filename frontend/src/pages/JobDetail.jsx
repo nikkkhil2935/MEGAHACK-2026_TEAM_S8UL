@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { MapPin, ArrowLeft, Send } from 'lucide-react'
+import { MapPin, ArrowLeft, Send, Map } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 
 export default function JobDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [job, setJob] = useState(null)
   const [match, setMatch] = useState(null)
   const [applying, setApplying] = useState(false)
@@ -72,6 +73,12 @@ export default function JobDetail() {
               className="btn-primary mt-4 flex items-center gap-2 disabled:opacity-50">
               <Send size={16} /> {applying ? 'Applying...' : 'Apply Now'}
             </button>
+            {match?.missing_skills?.length > 0 && (
+              <button onClick={() => navigate(`/roadmap?skills=${encodeURIComponent(match.missing_skills.map(s => s.name || s).join(','))}`)}
+                className="btn-ghost mt-2 flex items-center gap-2 text-sm">
+                <Map size={16} /> Build Roadmap for Missing Skills
+              </button>
+            )}
           </div>
 
           {/* Match Details */}

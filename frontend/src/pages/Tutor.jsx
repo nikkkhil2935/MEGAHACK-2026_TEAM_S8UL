@@ -25,6 +25,7 @@ export default function Tutor() {
   const [uploadedDocs, setUploadedDocs] = useState([])
   const [uploading, setUploading] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [suggestedQs, setSuggestedQs] = useState([])
   const fileInputRef = useRef(null)
   const bottomRef = useRef(null)
 
@@ -92,6 +93,11 @@ export default function Tutor() {
       setUploadedDocs(prev => [...prev, { name: data.name, chars: data.chars }])
       setMessages(prev => [...prev, { role: 'assistant', content: `📄 Document uploaded: ${data.name} (${data.chars} chars)\nPreview: ${data.preview}...` }])
       toast.success(`Uploaded ${data.name}`)
+      // Generate suggested questions
+      try {
+        const { data: suggestions } = await api.post('/tutor/suggest', { chat_id: activeSession.id })
+        if (suggestions?.questions) setSuggestedQs(suggestions.questions)
+      } catch {}
     } catch { toast.error('Failed to upload document') }
     finally { setUploading(false); if (fileInputRef.current) fileInputRef.current.value = '' }
   }
@@ -203,6 +209,17 @@ export default function Tutor() {
             </div>
 
             {/* Input */}
+            {suggestedQs.length > 0 && messages.length <= 1 && (
+              <div className="flex flex-wrap gap-2 px-4 pb-3">
+                <span className="text-xs text-gray-500 w-full mb-1">Suggested questions:</span>
+                {suggestedQs.map((q, i) => (
+                  <button key={i} onClick={() => { setInput(q); setSuggestedQs([]) }}
+                    className="text-xs px-3 py-1.5 bg-surface-700 hover:bg-surface-600 text-foreground rounded-full border border-white/5 transition-colors truncate max-w-xs">
+                    {q}
+                  </button>
+                ))}
+              </div>
+            )}
             <form onSubmit={sendMessage} className="border-t border-white/5 p-4">
               {uploadedDocs.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-2">

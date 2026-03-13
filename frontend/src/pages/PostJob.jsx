@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2, Briefcase } from 'lucide-react'
+import { ArrowLeft, Loader2, Briefcase, Sparkles, CheckCircle, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 
@@ -46,6 +46,19 @@ export default function PostJob() {
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to post job')
     } finally { setLoading(false) }
+  }
+
+  const [healthScore, setHealthScore] = useState(null)
+  const [checkingHealth, setCheckingHealth] = useState(false)
+
+  async function checkHealthScore() {
+    if (!form.description) { toast.error('Add a description first'); return }
+    setCheckingHealth(true)
+    try {
+      const { data } = await api.post('/jobs/health-score', form)
+      setHealthScore(data)
+    } catch { toast.error('Health check failed') }
+    finally { setCheckingHealth(false) }
   }
 
   return (
@@ -137,6 +150,38 @@ export default function PostJob() {
           <label className="text-xs font-medium text-gray-400 mb-1 block">Application Deadline</label>
           <input type="date" value={form.application_deadline} onChange={e => update('application_deadline', e.target.value)}
             className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none" />
+        </div>
+
+        {/* Health Score */}
+        <div className="border-t border-white/5 pt-4">
+          <button type="button" onClick={checkHealthScore} disabled={checkingHealth || !form.description}
+            className="flex items-center gap-2 text-sm text-brand-400 hover:text-brand-300 transition-colors disabled:opacity-40 mb-3">
+            {checkingHealth ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            {checkingHealth ? 'Analyzing...' : 'Check JD Health Score'}
+          </button>
+
+          {healthScore && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              className="bg-surface-700 rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-foreground">JD Health Score</span>
+                <span className={`text-lg font-bold ${healthScore.score >= 70 ? 'text-green-400' : healthScore.score >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                  {healthScore.score}/100 ({healthScore.grade})
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 mb-2">{healthScore.summary}</p>
+              {healthScore.suggestions?.length > 0 && (
+                <div className="space-y-1">
+                  {healthScore.suggestions.map((s, i) => (
+                    <div key={i} className="flex items-start gap-1.5 text-xs">
+                      <CheckCircle size={12} className="text-green-400 mt-0.5 shrink-0" />
+                      <span className="text-gray-300">{s}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
         </div>
 
         <button type="submit" disabled={loading}

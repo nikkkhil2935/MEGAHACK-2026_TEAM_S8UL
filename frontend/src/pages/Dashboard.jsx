@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Mic, Briefcase, User, TrendingUp, Award, Target } from 'lucide-react'
+import { Mic, Briefcase, User, TrendingUp, Award, Target, BookOpen, GraduationCap, Flame } from 'lucide-react'
 import api from '../services/api'
 import { useAuthStore } from '../store/auth'
 
@@ -51,6 +51,52 @@ export default function Dashboard() {
           <StatCard icon={TrendingUp} label="Avg Match" value={`${data?.avg_match_score || 0}%`} color="text-green-400" />
           <StatCard icon={Award} label="Avg Interview" value={data?.avg_interview_score || 0} color="text-yellow-400" />
         </div>
+
+        {/* Profile Strength */}
+        {data?.profile_strength !== undefined && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            className="glass-card p-5 mb-8">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-foreground">Profile Strength</h3>
+              <span className={`text-sm font-bold ${(data.profile_strength || 0) >= 80 ? 'text-green-400' : (data.profile_strength || 0) >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                {data.profile_strength || 0}%
+              </span>
+            </div>
+            <div className="w-full h-2 bg-surface-700 rounded-full overflow-hidden mb-3">
+              <div className={`h-full rounded-full transition-all duration-700 ${(data.profile_strength || 0) >= 80 ? 'bg-green-500' : (data.profile_strength || 0) >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                style={{ width: `${data.profile_strength || 0}%` }} />
+            </div>
+            {data.profile_nudges?.length > 0 && (
+              <div className="space-y-1.5">
+                {data.profile_nudges.map((nudge, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs text-gray-400">
+                    <div className="w-1 h-1 rounded-full bg-brand-400" />
+                    {nudge}
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Interview Streak */}
+        {(data?.total_interviews || 0) > 0 && (
+          <div className="glass-card p-5 mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
+                <Flame size={20} className="text-orange-400" />
+              </div>
+              <div>
+                <div className="text-foreground font-semibold text-sm">
+                  🔥 {data.interview_streak || data.total_interviews} Day Practice Streak
+                </div>
+                <div className="text-xs text-gray-400">
+                  {data.total_interviews} interviews completed • Keep practicing daily!
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">

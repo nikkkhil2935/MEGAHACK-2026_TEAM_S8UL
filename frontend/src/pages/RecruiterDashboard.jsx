@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Briefcase, Users, Plus, Eye, ChevronRight, Loader2, Building2 } from 'lucide-react'
+import { Briefcase, Users, Plus, Eye, ChevronRight, Loader2, Building2, Activity, Clock, UserPlus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 
 export default function RecruiterDashboard() {
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
+  const [activityFeed, setActivityFeed] = useState([])
 
   useEffect(() => { fetchData() }, [])
 
@@ -23,6 +24,21 @@ export default function RecruiterDashboard() {
     }
     finally { setLoading(false) }
   }
+
+  // Simulated activity feed from recent applications
+  useEffect(() => {
+    if (jobs.length > 0) {
+      const recentActivity = jobs
+        .filter(j => j.applicant_count > 0)
+        .slice(0, 5)
+        .map(j => ({
+          job_title: j.title,
+          count: j.applicant_count,
+          time: j.created_at
+        }));
+      setActivityFeed(recentActivity);
+    }
+  }, [jobs]);
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -64,6 +80,26 @@ export default function RecruiterDashboard() {
         ))}
       </div>
 
+      {/* Activity Feed */}
+      {activityFeed.length > 0 && (
+        <div className="bg-surface-800 border border-white/5 rounded-xl p-4 mb-8">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Activity size={14} className="text-green-400" /> Recent Activity
+          </h3>
+          <div className="space-y-2">
+            {activityFeed.map((a, i) => (
+              <div key={i} className="flex items-center gap-3 text-xs">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+                <span className="text-gray-400">
+                  <span className="text-foreground font-medium">{a.count}</span> applicant{a.count !== 1 ? 's' : ''} applied to <span className="text-foreground font-medium">{a.job_title}</span>
+                </span>
+                <span className="text-gray-500 ml-auto">{new Date(a.time).toLocaleDateString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Job Listings */}
       {jobs.length === 0 ? (
         <div className="text-center py-20 text-gray-500">
@@ -93,8 +129,9 @@ export default function RecruiterDashboard() {
                     <div className="text-sm font-bold text-foreground">{job.applicant_count || 0}</div>
                     <div className="text-[10px] text-gray-500">applicants</div>
                   </div>
-                  <Link to={`/recruiter/job/${job.id}`}
-                    className="p-2 bg-surface-700 hover:bg-surface-600 rounded-lg transition-colors">
+                  <Link to={`/recruiter/job/${job.id}`} title="View applicants & invite"
+                    className="p-2 bg-surface-700 hover:bg-surface-600 rounded-lg transition-colors flex items-center gap-1">
+                    <UserPlus size={14} className="text-brand-400" />
                     <Eye size={16} className="text-gray-400" />
                   </Link>
                 </div>

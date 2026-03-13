@@ -1,7 +1,7 @@
 const router   = require('express').Router();
 const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
-const { groqChat } = require('../services/groq/client');
+const { groqChat, groqJSON } = require('../services/groq/client');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10_000_000 } });
 
@@ -139,6 +139,26 @@ router.post('/upload-doc', authenticate, upload.single('document'), async (req, 
   } catch (err) {
     console.error('Doc upload error:', err.message);
     res.status(500).json({ error: 'Failed to process document' });
+  }
+});
+
+router.post('/suggest', authenticate, async (req, res) => {
+  try {
+    const { chat_id } = req.body;
+    const { data: chat } = await supabase.from('tutor_chats')
+      .select('document_text, context_docs').eq('id', chat_id).eq('user_id', req.user.id).single();
+
+    const docText = chat?.document_text || chat?.context_docs?.[0]?.text || '';
+    if (!docText) return res.json({ questions: [] });
+
+    const docPreview = docText.substring(0, 2000);
+    const result = await groqJSON(
+      'Generate 5 insightful questions a student might ask about this document.',
+      `DOCUMENT EXCERPT:\n${docPreview}\n\nReturn JSON: { "questions": ["question1", "question2", "question3", "question4", "question5"] }`
+    );
+    res.json(result);
+  } catch {
+    res.json({ questions: [] });
   }
 });
 

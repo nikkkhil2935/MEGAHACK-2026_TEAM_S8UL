@@ -20,15 +20,52 @@ router.get('/candidate', authenticate, async (req, res) => {
     ? Math.round(interviews.data.reduce((s, i) => s + (i.overall_score || 0), 0) / interviews.data.length)
     : 0;
 
+  // Interview streak calculation
+  let streak = 0;
+  if (interviews.data?.length > 0) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sorted = interviews.data
+      .map(i => { const d = new Date(i.started_at); d.setHours(0,0,0,0); return d.getTime(); })
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .sort((a, b) => b - a);
+
+    let checkDate = today.getTime();
+    for (const d of sorted) {
+      if (d === checkDate || d === checkDate - 86400000) {
+        streak++;
+        checkDate = d - 86400000;
+      } else break;
+    }
+  }
+
+  // Profile strength calculation
+  const parsed = profile.data?.parsed_data || {};
+  const totalInterviews = interviews.data?.length || 0;
+  let strength = 0;
+  const nudges = [];
+
+  if (parsed.name) strength += 10; else nudges.push('Add your full name');
+  if (parsed.headline) strength += 10; else nudges.push('Add a professional headline');
+  if (parsed.skills?.length >= 5) strength += 20; else nudges.push(`Add ${Math.max(0, 5 - (parsed.skills?.length || 0))} more skills to reach 5+`);
+  if (parsed.experience?.length >= 1) strength += 15; else nudges.push('Add work experience');
+  if (parsed.education?.length >= 1) strength += 10; else nudges.push('Add education details');
+  if (parsed.projects?.length >= 2) strength += 20; else nudges.push(`Add ${Math.max(0, 2 - (parsed.projects?.length || 0))} more projects to unlock deeper interview questions`);
+  if (parsed.certifications?.length >= 1) strength += 5; else nudges.push('Add certifications to stand out');
+  if (totalInterviews > 0) strength += 10; else nudges.push('Take your first mock interview to boost your profile');
+
   res.json({
     total_applications: apps.data?.length || 0,
-    total_interviews: interviews.data?.length || 0,
+    total_interviews: totalInterviews,
     avg_match_score: avg_match,
     avg_interview_score: avg_interview,
     skills_count: profile.data?.parsed_data?.skills?.length || 0,
     completeness_score: profile.data?.completeness_score || 0,
     applications: apps.data || [],
     recent_interviews: interviews.data || [],
+    profile_strength: Math.min(100, strength),
+    profile_nudges: nudges,
+    interview_streak: streak,
   });
 });
 

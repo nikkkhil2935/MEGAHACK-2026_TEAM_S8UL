@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  RadarChart, Radar, PolarGrid, PolarAngleAxis,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip
 } from 'recharts'
 import { CheckCircle, XCircle, AlertTriangle, Clock, Shield, TrendingUp } from 'lucide-react'
@@ -121,6 +121,27 @@ export default function InterviewReport() {
                 </ResponsiveContainer>
               </div>
             </div>
+
+            {/* Communication Radar */}
+            {report?.score_breakdown && (
+              <div className="glass-card p-5">
+                <h3 className="text-foreground font-semibold text-sm mb-4">Performance Radar</h3>
+                <ResponsiveContainer width="100%" height={280}>
+                  <RadarChart data={[
+                    { subject: 'Technical', value: report.score_breakdown.technical || 0 },
+                    { subject: 'Behavioral', value: report.score_breakdown.behavioral || 0 },
+                    { subject: 'Communication', value: report.score_breakdown.communication || 0 },
+                    { subject: 'Problem Solving', value: report.score_breakdown.problem_solving || 0 },
+                    { subject: 'Culture Fit', value: report.score_breakdown.culture_fit || 0 },
+                  ]}>
+                    <PolarGrid stroke="var(--color-surface-600)" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--color-foreground-muted)', fontSize: 11 }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} />
+                    <Radar name="Score" dataKey="value" stroke="var(--color-brand-500)" fill="var(--color-brand-500)" fillOpacity={0.3} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="glass-card p-5">

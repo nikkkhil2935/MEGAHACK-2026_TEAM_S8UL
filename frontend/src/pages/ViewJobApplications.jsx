@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2, Users, Star, Mail, Download, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Loader2, Users, Star, Mail, Download, ChevronDown, ChevronUp, Sparkles, Shield, AlertTriangle, Calendar } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 
@@ -12,6 +12,8 @@ export default function ViewJobApplications() {
   const [applicants, setApplicants] = useState([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(null)
+  const [shortlist, setShortlist] = useState(null)
+  const [shortlisting, setShortlisting] = useState(false)
 
   useEffect(() => { fetchData() }, [id])
 
@@ -26,6 +28,16 @@ export default function ViewJobApplications() {
     } catch {
       toast.error('Failed to load applications')
     } finally { setLoading(false) }
+  }
+
+  async function generateShortlist() {
+    setShortlisting(true)
+    try {
+      const { data } = await api.post(`/jobs/${id}/shortlist`)
+      setShortlist(data)
+      toast.success('AI shortlist generated!')
+    } catch { toast.error('Shortlist generation failed') }
+    finally { setShortlisting(false) }
   }
 
   function getScoreColor(score) {
@@ -57,6 +69,43 @@ export default function ViewJobApplications() {
       <div className="flex items-center gap-2 mb-4">
         <Users size={18} className="text-brand-400" />
         <span className="text-sm text-gray-400">{applicants.length} applicant{applicants.length !== 1 ? 's' : ''}</span>
+      </div>
+
+      {/* AI Shortlist */}
+      <div className="mb-6">
+        <button onClick={generateShortlist} disabled={shortlisting || applicants.length === 0}
+          className="flex items-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 mb-4">
+          {shortlisting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+          {shortlisting ? 'Analyzing candidates...' : 'AI Shortlist Top 3'}
+        </button>
+
+        {shortlist && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            className="bg-surface-800 border border-brand-500/20 rounded-xl p-5 mb-4">
+            <h3 className="text-foreground font-semibold text-sm mb-1 flex items-center gap-2">
+              <Sparkles size={14} className="text-brand-400" /> AI Recommended Shortlist
+            </h3>
+            <p className="text-xs text-gray-400 mb-4">{shortlist.summary}</p>
+            <div className="space-y-3">
+              {shortlist.shortlist?.map((c, i) => (
+                <div key={i} className="flex items-start gap-3 p-3 bg-surface-700 rounded-lg">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white ${i === 0 ? 'bg-yellow-500' : i === 1 ? 'bg-gray-400' : 'bg-amber-700'}`}>
+                    #{c.rank}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-foreground">{c.name}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{c.reason}</div>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {c.strengths?.map((s, j) => (
+                        <span key={j} className="text-[10px] px-1.5 py-0.5 bg-green-500/10 text-green-400 rounded">{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {applicants.length === 0 ? (
@@ -125,6 +174,56 @@ export default function ViewJobApplications() {
                         <div className="text-gray-300">{new Date(app.applied_at).toLocaleDateString()}</div>
                       </div>
                     )}
+                  </div>
+
+                  {app.interview && (
+                    <div className="mt-3 p-3 bg-surface-700 rounded-lg">
+                      <div className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">
+                        <Shield size={12} className="text-brand-400" /> Interview Insights
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div>
+                          <div className="text-gray-500">Score</div>
+                          <div className={`font-bold ${getScoreColor(app.interview.score)}`}>{app.interview.score}/100</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500">Integrity</div>
+                          <div className="flex items-center gap-1">
+                            {(app.interview.tab_switches > 0 || app.interview.eye_drifts > 0) ? (
+                              <><AlertTriangle size={10} className="text-red-400" /> <span className="text-red-400">{app.interview.tab_switches} tab, {app.interview.eye_drifts} eye</span></>
+                            ) : (
+                              <span className="text-green-400">Clean ✓</span>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500">Confidence</div>
+                          <div className="text-foreground">{app.interview.confidence || 'N/A'}</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500">Recommendation</div>
+                          <div className={`font-medium ${app.interview.hire_recommendation?.includes('Yes') ? 'text-green-400' : app.interview.hire_recommendation?.includes('No') ? 'text-red-400' : 'text-yellow-400'}`}>
+                            {app.interview.hire_recommendation || 'Pending'}
+                          </div>
+                        </div>
+                      </div>
+                      {app.interview.top_strength && (
+                        <div className="mt-2 text-xs text-gray-400">
+                          <span className="text-green-400">★</span> {app.interview.top_strength}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="mt-3 flex gap-2">
+                    <button onClick={() => { toast.success(`Interview invite sent to ${app.name || app.email}!`) }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-xs font-medium transition-colors">
+                      <Calendar size={12} /> Invite to Interview
+                    </button>
+                    <a href={`mailto:${app.email}`}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-600 hover:bg-surface-500 text-foreground rounded-lg text-xs font-medium transition-colors">
+                      <Mail size={12} /> Email
+                    </a>
                   </div>
                 </div>
               )}

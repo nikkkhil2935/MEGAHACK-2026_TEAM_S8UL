@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
 import { useThemeStore } from '../../store/theme'
-import { LayoutDashboard, Briefcase, Mic, User, LogOut, History, Map, MessageCircle, Building2, PlusCircle, Menu, X, Sun, Moon } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Mic, User, LogOut, History, Map, MessageCircle, Building2, PlusCircle, BarChart3, Menu, X, Sun, Moon } from 'lucide-react'
 
 export default function Navbar() {
   const { user, logout } = useAuthStore()
@@ -30,6 +30,7 @@ export default function Navbar() {
   const recruiterLinks = [
     { to: '/recruiter', icon: Building2, label: 'Dashboard' },
     { to: '/recruiter/post-job', icon: PlusCircle, label: 'Post Job' },
+    { to: '/recruiter/analytics', icon: BarChart3, label: 'Analytics' },
     { to: '/jobs', icon: Briefcase, label: 'Browse Jobs' },
     { to: '/profile', icon: User, label: 'Profile' },
   ]

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Map, Plus, BookOpen, Trophy, ChevronRight, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 
 export default function Roadmap() {
+  const [searchParams] = useSearchParams()
   const [roadmaps, setRoadmaps] = useState([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
@@ -16,6 +17,14 @@ export default function Roadmap() {
   const [showForm, setShowForm] = useState(false)
 
   useEffect(() => { fetchRoadmaps() }, [])
+
+  useEffect(() => {
+    const skills = searchParams.get('skills')
+    if (skills) {
+      setSkill(skills)
+      setShowForm(true)
+    }
+  }, [searchParams])
 
   async function fetchRoadmaps() {
     try {
