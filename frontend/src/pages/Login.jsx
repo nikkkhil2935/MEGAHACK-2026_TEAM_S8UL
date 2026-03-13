@@ -35,7 +35,7 @@ export default function Login() {
       >
         <div className="text-center mb-8">
           <div className="w-12 h-12 rounded-xl bg-brand-500 flex items-center justify-center text-white font-bold mx-auto mb-4">CB</div>
-          <h1 className="text-2xl font-display font-bold text-white">Welcome Back</h1>
+          <h1 className="text-2xl font-display font-bold text-foreground">Welcome Back</h1>
           <p className="text-gray-400 text-sm mt-1">Sign in to CareerBridge AI</p>
         </div>
 

@@ -20,10 +20,10 @@ export default function Landing() {
             Powered by Groq LLaMA 3.3 70B
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-display font-bold text-white leading-tight mb-6">
+          <h1 className="text-5xl md:text-7xl font-display font-bold text-foreground leading-tight mb-6">
             Your AI Career
             <br />
-            <span className="text-white">
+            <span className="text-foreground">
               Command Center
             </span>
           </h1>
@@ -58,7 +58,7 @@ export default function Landing() {
               <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center mb-4">
                 <Icon size={20} className="text-brand-400" />
               </div>
-              <h3 className="text-white font-semibold mb-2">{title}</h3>
+              <h3 className="text-foreground font-semibold mb-2">{title}</h3>
               <p className="text-gray-400 text-sm">{desc}</p>
             </motion.div>
           ))}

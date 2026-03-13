@@ -51,7 +51,7 @@ export default function Roadmap() {
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-display font-bold text-white">Learning Roadmaps</h1>
+          <h1 className="text-2xl font-display font-bold text-foreground">Learning Roadmaps</h1>
           <p className="text-sm text-gray-400 mt-1">AI-generated skill paths with YouTube courses & quizzes</p>
         </div>
         <button onClick={() => setShowForm(!showForm)}
@@ -69,18 +69,18 @@ export default function Roadmap() {
               <label className="block text-xs text-gray-400 mb-1">Skill to Learn</label>
               <input value={skill} onChange={e => setSkill(e.target.value)}
                 placeholder="e.g. React, Python, System Design"
-                className="w-full px-3 py-2 bg-surface-700 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500" />
+                className="w-full px-3 py-2 bg-surface-700 border border-white/10 rounded-lg text-sm text-foreground placeholder-gray-500 focus:outline-none focus:border-brand-500" />
             </div>
             <div>
               <label className="block text-xs text-gray-400 mb-1">Weekly Hours Available</label>
               <input type="number" value={weeklyHours} onChange={e => setWeeklyHours(+e.target.value)}
                 min={1} max={40}
-                className="w-full px-3 py-2 bg-surface-700 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-brand-500" />
+                className="w-full px-3 py-2 bg-surface-700 border border-white/10 rounded-lg text-sm text-foreground focus:outline-none focus:border-brand-500" />
             </div>
             <div>
               <label className="block text-xs text-gray-400 mb-1">Current Level</label>
               <select value={level} onChange={e => setLevel(e.target.value)}
-                className="w-full px-3 py-2 bg-surface-700 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-brand-500">
+                className="w-full px-3 py-2 bg-surface-700 border border-white/10 rounded-lg text-sm text-foreground focus:outline-none focus:border-brand-500">
                 <option value="beginner">Beginner</option>
                 <option value="intermediate">Intermediate</option>
                 <option value="advanced">Advanced</option>
@@ -89,7 +89,7 @@ export default function Roadmap() {
             <div>
               <label className="block text-xs text-gray-400 mb-1">Target Level</label>
               <select value={targetLevel} onChange={e => setTargetLevel(e.target.value)}
-                className="w-full px-3 py-2 bg-surface-700 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-brand-500">
+                className="w-full px-3 py-2 bg-surface-700 border border-white/10 rounded-lg text-sm text-foreground focus:outline-none focus:border-brand-500">
                 <option value="intermediate">Intermediate</option>
                 <option value="advanced">Advanced</option>
                 <option value="expert">Expert</option>
@@ -122,7 +122,7 @@ export default function Roadmap() {
                       <BookOpen size={20} className="text-brand-400" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-white">{rm.skill_name}</h3>
+                      <h3 className="font-semibold text-foreground">{rm.skill_name}</h3>
                       <p className="text-xs text-gray-400 mt-0.5">Week {rm.current_week} of 4</p>
                     </div>
                   </div>

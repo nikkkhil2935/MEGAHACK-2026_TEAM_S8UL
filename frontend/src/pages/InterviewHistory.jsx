@@ -24,7 +24,7 @@ export default function InterviewHistory() {
     <div className="min-h-screen bg-surface-900 p-6">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-display font-bold text-white">Interview History</h1>
+          <h1 className="text-2xl font-display font-bold text-foreground">Interview History</h1>
           <Link to="/interview" className="btn-primary text-sm py-2">New Interview</Link>
         </div>
 
@@ -42,7 +42,7 @@ export default function InterviewHistory() {
                   className="glass-card p-5 flex items-center justify-between hover:border-white/10 transition-colors block">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-white font-medium">{s.job_postings?.title || s.interview_type}</span>
+                      <span className="text-foreground font-medium">{s.job_postings?.title || s.interview_type}</span>
                       <span className="text-xs px-2 py-0.5 rounded bg-surface-700 text-gray-400 capitalize">{s.interview_type}</span>
                       {s.language && s.language !== 'en' && (
                         <span className="text-xs px-2 py-0.5 rounded bg-accent-500/20 text-accent-400 uppercase">{s.language}</span>

@@ -66,13 +66,13 @@ export default function Profile() {
     <div className="min-h-screen bg-surface-900 p-6">
       <div className="max-w-4xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-display font-bold text-white mb-6">Your Profile</h1>
+          <h1 className="text-2xl font-display font-bold text-foreground mb-6">Your Profile</h1>
 
           {/* Import Options */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             {/* Profile Text Import */}
             <div className="glass-card p-5">
-              <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <h3 className="text-foreground font-semibold mb-3 flex items-center gap-2">
                 <FileText size={16} className="text-blue-400" />
                 Import Profile
               </h3>
@@ -88,7 +88,7 @@ export default function Profile() {
 
             {/* Resume Upload */}
             <div className="glass-card p-5">
-              <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <h3 className="text-foreground font-semibold mb-3 flex items-center gap-2">
                 <Upload size={16} className="text-green-400" />
                 Upload Resume PDF
               </h3>
@@ -120,7 +120,7 @@ export default function Profile() {
             <div className="space-y-5">
               {/* Header */}
               <div className="glass-card p-6">
-                <h2 className="text-xl font-display font-bold text-white">{parsed.name || 'Your Name'}</h2>
+                <h2 className="text-xl font-display font-bold text-foreground">{parsed.name || 'Your Name'}</h2>
                 {parsed.headline && <p className="text-gray-400 text-sm mt-1">{parsed.headline}</p>}
                 {parsed.location && <p className="text-gray-500 text-xs mt-1">{parsed.location}</p>}
                 {parsed.summary && <p className="text-gray-300 text-sm mt-3">{parsed.summary}</p>}
@@ -129,7 +129,7 @@ export default function Profile() {
               {/* Skills */}
               {parsed.skills?.length > 0 && (
                 <div className="glass-card p-5">
-                  <h3 className="text-white font-semibold mb-3">Skills</h3>
+                  <h3 className="text-foreground font-semibold mb-3">Skills</h3>
                   <div className="flex flex-wrap gap-2">
                     {parsed.skills.map((s, i) => (
                       <span key={i} className="px-3 py-1 rounded-full text-xs font-medium bg-brand-500/10 text-brand-300 border border-brand-500/20">
@@ -143,11 +143,11 @@ export default function Profile() {
               {/* Experience */}
               {parsed.experience?.length > 0 && (
                 <div className="glass-card p-5">
-                  <h3 className="text-white font-semibold mb-3">Experience</h3>
+                  <h3 className="text-foreground font-semibold mb-3">Experience</h3>
                   <div className="space-y-4">
                     {parsed.experience.map((exp, i) => (
                       <div key={i} className="border-l-2 border-brand-500/30 pl-4">
-                        <h4 className="text-white text-sm font-medium">{exp.role}</h4>
+                        <h4 className="text-foreground text-sm font-medium">{exp.role}</h4>
                         <p className="text-gray-400 text-xs">{exp.company} {exp.start && `| ${exp.start} - ${exp.end || 'Present'}`}</p>
                         {exp.bullets?.length > 0 && (
                           <ul className="mt-2 space-y-1">
@@ -167,11 +167,11 @@ export default function Profile() {
               {/* Projects */}
               {parsed.projects?.length > 0 && (
                 <div className="glass-card p-5">
-                  <h3 className="text-white font-semibold mb-3">Projects</h3>
+                  <h3 className="text-foreground font-semibold mb-3">Projects</h3>
                   <div className="space-y-3">
                     {parsed.projects.map((proj, i) => (
                       <div key={i} className="p-3 bg-surface-700 rounded-xl">
-                        <h4 className="text-white text-sm font-medium">{proj.name}</h4>
+                        <h4 className="text-foreground text-sm font-medium">{proj.name}</h4>
                         {proj.tech?.length > 0 && (
                           <div className="flex gap-1 mt-1 flex-wrap">
                             {proj.tech.map((t, j) => (
@@ -189,11 +189,11 @@ export default function Profile() {
               {/* Education */}
               {parsed.education?.length > 0 && (
                 <div className="glass-card p-5">
-                  <h3 className="text-white font-semibold mb-3">Education</h3>
+                  <h3 className="text-foreground font-semibold mb-3">Education</h3>
                   <div className="space-y-3">
                     {parsed.education.map((edu, i) => (
                       <div key={i}>
-                        <h4 className="text-white text-sm font-medium">{edu.degree} {edu.field && `in ${edu.field}`}</h4>
+                        <h4 className="text-foreground text-sm font-medium">{edu.degree} {edu.field && `in ${edu.field}`}</h4>
                         <p className="text-gray-400 text-xs">{edu.institution} {edu.year && `| ${edu.year}`}</p>
                       </div>
                     ))}
@@ -204,7 +204,7 @@ export default function Profile() {
           ) : (
             <div className="glass-card p-8 text-center">
               <AlertCircle size={32} className="text-gray-600 mx-auto mb-3" />
-              <h3 className="text-white font-semibold mb-1">No Profile Data Yet</h3>
+              <h3 className="text-foreground font-semibold mb-1">No Profile Data Yet</h3>
               <p className="text-gray-400 text-sm">Import your LinkedIn profile or upload your resume to get started.</p>
             </div>
           )}

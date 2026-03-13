@@ -22,6 +22,9 @@
   --color-surface-600: #e5e5e5;
   --color-surface-500: #d4d4d4;
 
+  --color-foreground: #171717;
+  --color-foreground-muted: #525252;
+
   --font-display: "Inter", "Plus Jakarta Sans", sans-serif;
   --font-body: "Inter", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
@@ -72,6 +75,9 @@ body {
   --color-surface-700: #171717;
   --color-surface-600: #262626;
   --color-surface-500: #404040;
+
+  --color-foreground: #ffffff;
+  --color-foreground-muted: #d4d4d4;
 }
 
 [data-theme="dark"] body {
@@ -147,36 +153,7 @@ body {
   @apply ring-white/20;
 }
 
-/* ─── Light mode text fixes ─── */
-[data-theme="light"] .text-white {
-  color: #171717;
-}
-[data-theme="light"] .text-gray-100 {
-  color: #262626;
-}
-[data-theme="light"] .text-gray-200 {
-  color: #404040;
-}
-[data-theme="light"] .text-gray-300 {
-  color: #525252;
-}
-[data-theme="light"] .text-gray-400 {
-  color: #737373;
-}
-[data-theme="light"] .text-gray-500 {
-  color: #a3a3a3;
-}
-/* But NOT inside elements that are actually dark */
-[data-theme="light"] .bg-black .text-white,
-[data-theme="light"] .bg-surface-900 .text-white,
-[data-theme="light"] [class*="bg-red-"] .text-white,
-[data-theme="light"] [class*="bg-brand-500"] .text-white,
-[data-theme="light"] .btn-primary .text-white,
-[data-theme="light"] [class*="bg-black"] .text-white {
-  color: #ffffff;
-}
-
-/* Light mode border fixes */
+/* ─── Light mode border fixes ─── */
 [data-theme="light"] .border-white\/5 {
   border-color: rgba(0,0,0,0.06);
 }

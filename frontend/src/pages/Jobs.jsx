@@ -22,7 +22,7 @@ export default function Jobs() {
   return (
     <div className="min-h-screen bg-surface-900 p-6">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-display font-bold text-white mb-6">Browse Jobs</h1>
+        <h1 className="text-2xl font-display font-bold text-foreground mb-6">Browse Jobs</h1>
 
         {/* Search */}
         <div className="relative mb-6">
@@ -38,7 +38,7 @@ export default function Jobs() {
         ) : jobs.length === 0 ? (
           <div className="glass-card p-8 text-center">
             <Briefcase size={32} className="text-gray-600 mx-auto mb-3" />
-            <h3 className="text-white font-semibold mb-1">No Jobs Found</h3>
+            <h3 className="text-foreground font-semibold mb-1">No Jobs Found</h3>
             <p className="text-gray-400 text-sm">Check back later or try a different search.</p>
           </div>
         ) : (
@@ -52,7 +52,7 @@ export default function Jobs() {
                   className="glass-card p-5 block hover:border-brand-500/20 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-white font-semibold">{job.title}</h3>
+                      <h3 className="text-foreground font-semibold">{job.title}</h3>
                       <p className="text-gray-400 text-sm">{job.company}</p>
                       <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
                         {job.location && <span className="flex items-center gap-1"><MapPin size={12} />{job.location}</span>}

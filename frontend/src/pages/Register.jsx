@@ -36,7 +36,7 @@ export default function Register() {
       >
         <div className="text-center mb-8">
           <div className="w-12 h-12 rounded-xl bg-brand-500 flex items-center justify-center text-white font-bold mx-auto mb-4">CB</div>
-          <h1 className="text-2xl font-display font-bold text-white">Create Account</h1>
+          <h1 className="text-2xl font-display font-bold text-foreground">Create Account</h1>
           <p className="text-gray-400 text-sm mt-1">Join CareerBridge AI</p>
         </div>
 

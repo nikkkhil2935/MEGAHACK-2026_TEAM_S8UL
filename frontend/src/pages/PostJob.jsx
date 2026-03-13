@@ -51,12 +51,12 @@ export default function PostJob() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <button onClick={() => navigate('/recruiter')}
-        className="flex items-center gap-1 text-sm text-gray-400 hover:text-white mb-6 transition-colors">
+        className="flex items-center gap-1 text-sm text-gray-400 hover:text-foreground mb-6 transition-colors">
         <ArrowLeft size={14} /> Back to Dashboard
       </button>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-display font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-display font-bold text-foreground flex items-center gap-2">
           <Briefcase size={24} className="text-brand-400" /> Post New Job
         </h1>
         <p className="text-sm text-gray-400 mt-1">AI will auto-match qualified candidates</p>
@@ -70,13 +70,13 @@ export default function PostJob() {
             <label className="text-xs font-medium text-gray-400 mb-1 block">Job Title *</label>
             <input type="text" value={form.title} onChange={e => update('title', e.target.value)}
               placeholder="Senior Frontend Engineer"
-              className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none" />
+              className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-foreground placeholder-gray-500 focus:border-brand-500 focus:outline-none" />
           </div>
           <div>
             <label className="text-xs font-medium text-gray-400 mb-1 block">Company *</label>
             <input type="text" value={form.company} onChange={e => update('company', e.target.value)}
               placeholder="TechCorp Inc"
-              className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none" />
+              className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-foreground placeholder-gray-500 focus:border-brand-500 focus:outline-none" />
           </div>
         </div>
 
@@ -85,13 +85,13 @@ export default function PostJob() {
             <label className="text-xs font-medium text-gray-400 mb-1 block">Location</label>
             <input type="text" value={form.location} onChange={e => update('location', e.target.value)}
               placeholder="San Francisco, CA"
-              className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none" />
+              className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-foreground placeholder-gray-500 focus:border-brand-500 focus:outline-none" />
           </div>
           <div>
             <label className="text-xs font-medium text-gray-400 mb-1 block">Salary Range</label>
             <input type="text" value={form.salary_range} onChange={e => update('salary_range', e.target.value)}
               placeholder="$120k - $180k"
-              className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none" />
+              className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-foreground placeholder-gray-500 focus:border-brand-500 focus:outline-none" />
           </div>
         </div>
 
@@ -99,14 +99,14 @@ export default function PostJob() {
           <div>
             <label className="text-xs font-medium text-gray-400 mb-1 block">Remote Policy</label>
             <select value={form.remote_policy} onChange={e => update('remote_policy', e.target.value)}
-              className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+              className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none">
               {REMOTE_OPTIONS.map(o => <option key={o} value={o} className="capitalize">{o}</option>)}
             </select>
           </div>
           <div>
             <label className="text-xs font-medium text-gray-400 mb-1 block">Experience Level</label>
             <select value={form.experience_level} onChange={e => update('experience_level', e.target.value)}
-              className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+              className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none">
               {['junior', 'mid', 'senior', 'lead', 'principal'].map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
@@ -116,27 +116,27 @@ export default function PostJob() {
           <label className="text-xs font-medium text-gray-400 mb-1 block">Job Description *</label>
           <textarea value={form.description} onChange={e => update('description', e.target.value)}
             rows={5} placeholder="Describe the role, responsibilities, and what you're looking for..."
-            className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none resize-none" />
+            className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-foreground placeholder-gray-500 focus:border-brand-500 focus:outline-none resize-none" />
         </div>
 
         <div>
           <label className="text-xs font-medium text-gray-400 mb-1 block">Requirements (one per line)</label>
           <textarea value={form.requirements} onChange={e => update('requirements', e.target.value)}
             rows={4} placeholder="5+ years React experience&#10;Strong TypeScript skills&#10;Experience with cloud platforms"
-            className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none resize-none" />
+            className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-foreground placeholder-gray-500 focus:border-brand-500 focus:outline-none resize-none" />
         </div>
 
         <div>
           <label className="text-xs font-medium text-gray-400 mb-1 block">Tech Stack (comma separated)</label>
           <input type="text" value={form.tech_stack} onChange={e => update('tech_stack', e.target.value)}
             placeholder="React, Node.js, PostgreSQL, AWS"
-            className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none" />
+            className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-foreground placeholder-gray-500 focus:border-brand-500 focus:outline-none" />
         </div>
 
         <div>
           <label className="text-xs font-medium text-gray-400 mb-1 block">Application Deadline</label>
           <input type="date" value={form.application_deadline} onChange={e => update('application_deadline', e.target.value)}
-            className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none" />
+            className="w-full bg-surface-700 border border-white/5 rounded-lg px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none" />
         </div>
 
         <button type="submit" disabled={loading}

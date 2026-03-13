@@ -41,14 +41,14 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
         <Link to="/dashboard" className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-brand-500 flex items-center justify-center text-white text-xs font-bold">CB</div>
-          <span className="font-display font-semibold text-white text-sm hidden sm:block">CareerBridge AI</span>
+          <span className="font-display font-semibold text-foreground text-sm hidden sm:block">CareerBridge AI</span>
         </Link>
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-1">
           {links.map(({ to, icon: Icon, label }) => (
             <Link key={to} to={to}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-400 hover:text-white hover:bg-surface-700 transition-colors">
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-400 hover:text-foreground hover:bg-surface-700 transition-colors">
               <Icon size={15} />
               <span>{label}</span>
             </Link>
@@ -61,7 +61,7 @@ export default function Navbar() {
           </span>
 
           <button onClick={toggleTheme}
-            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-surface-700 transition-colors cursor-pointer"
+            className="p-2 rounded-lg text-gray-400 hover:text-foreground hover:bg-surface-700 transition-colors cursor-pointer"
             aria-label="Toggle theme">
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
@@ -74,7 +74,7 @@ export default function Navbar() {
 
         {/* Mobile hamburger */}
         <button onClick={() => setMobileOpen(o => !o)}
-          className="md:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-surface-700 transition-colors cursor-pointer">
+          className="md:hidden p-2 rounded-lg text-gray-400 hover:text-foreground hover:bg-surface-700 transition-colors cursor-pointer">
           {mobileOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
@@ -84,7 +84,7 @@ export default function Navbar() {
         <div className="px-4 py-3 space-y-1 border-t border-white/5 bg-surface-900/95 backdrop-blur-md">
           {links.map(({ to, icon: Icon, label }) => (
             <Link key={to} to={to} onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-surface-700 transition-colors">
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-foreground hover:bg-surface-700 transition-colors">
               <Icon size={16} />
               {label}
             </Link>
@@ -93,7 +93,7 @@ export default function Navbar() {
           <div className="flex items-center justify-between px-3 py-2">
             <span className="text-xs text-gray-500">{user?.full_name || user?.email}</span>
             <button onClick={toggleTheme}
-              className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-surface-700 transition-colors cursor-pointer"
+              className="p-2 rounded-lg text-gray-400 hover:text-foreground hover:bg-surface-700 transition-colors cursor-pointer"
               aria-label="Toggle theme">
               {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
             </button>

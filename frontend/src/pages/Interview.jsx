@@ -463,14 +463,14 @@ export default function Interview() {
           <div className="w-10 h-10 bg-brand-500/20 rounded-xl flex items-center justify-center">
             <Mic className="text-brand-400" size={20} />
           </div>
-          <h1 className="text-2xl font-display font-bold text-white">AI Mock Interview</h1>
+          <h1 className="text-2xl font-display font-bold text-foreground">AI Mock Interview</h1>
         </div>
         <p className="text-gray-400 text-sm mb-8">A live one-to-one conversation with an AI interviewer. Record your answers — transcribed by Groq Whisper AI for high accuracy.</p>
 
         <div className="space-y-4 mb-6">
           <div>
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block">Interview Type</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {['mixed','technical','behavioral','hr'].map(type => (
                 <button key={type} onClick={() => setConfig(p => ({ ...p, type }))}
                   className={`py-2.5 px-4 rounded-xl text-sm font-medium capitalize border transition-all cursor-pointer ${
@@ -562,7 +562,7 @@ export default function Interview() {
 
   /* ═══════════ ACTIVE INTERVIEW ═══════════ */
   return (
-    <div className="h-screen bg-surface-900 text-white flex flex-col overflow-hidden">
+    <div className="h-screen bg-surface-900 text-foreground flex flex-col overflow-hidden">
       {/* ── Top Bar ── */}
       <div className="border-b border-white/5 px-4 py-2 flex items-center justify-between flex-shrink-0 bg-surface-900/95 backdrop-blur-sm z-10">
         <div className="flex items-center gap-3">
@@ -722,7 +722,7 @@ export default function Interview() {
                 <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
                   msg.role === 'ai'
                     ? 'bg-surface-800 text-gray-200 border border-white/5'
-                    : 'bg-brand-500/15 text-white border border-brand-500/20'
+                    : 'bg-brand-500/15 text-foreground border border-brand-500/20'
                 }`}>
                   {msg.type && msg.role === 'ai' && msg.type !== 'greeting' && msg.type !== 'transition' && msg.type !== 'closing' && msg.type !== 'error' && msg.type !== 'followup-intro' && (
                     <span className={`text-[9px] font-bold uppercase tracking-wider block mb-1 ${
@@ -743,7 +743,7 @@ export default function Interview() {
                 <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5 bg-accent-500/20">
                   <User size={12} className="text-accent-400" />
                 </div>
-                <div className="max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed bg-red-500/10 text-white/80 border border-red-500/20 border-dashed flex items-center gap-2">
+                <div className="max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed bg-red-500/10 text-foreground/80 border border-red-500/20 border-dashed flex items-center gap-2">
                   <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 1 }}
                     className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
                   <span>Recording... {Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')}</span>
@@ -758,7 +758,7 @@ export default function Interview() {
                 <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5 bg-accent-500/20">
                   <User size={12} className="text-accent-400" />
                 </div>
-                <div className="max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed bg-brand-500/10 text-white/80 border border-brand-500/10 border-dashed flex items-center gap-2">
+                <div className="max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed bg-brand-500/10 text-foreground/80 border border-brand-500/10 border-dashed flex items-center gap-2">
                   <Loader2 size={12} className="animate-spin text-brand-400" />
                   <span>Transcribing...</span>
                 </div>
@@ -837,7 +837,7 @@ export default function Interview() {
                 <input type="text" value={textInput} onChange={e => setTextInput(e.target.value)}
                   placeholder="Type your answer..."
                   disabled={aiSpeaking || submitting || isTranscribing}
-                  className="flex-1 bg-surface-800 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 disabled:opacity-30" />
+                  className="flex-1 bg-surface-800 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground placeholder-gray-500 focus:outline-none focus:border-brand-500 disabled:opacity-30" />
                 <button type="submit" disabled={!textInput.trim() || aiSpeaking || submitting || isTranscribing}
                   className="px-3 py-2 bg-brand-500 hover:bg-brand-400 rounded-lg text-white transition-colors cursor-pointer disabled:opacity-30">
                   <Send size={14} />
@@ -859,7 +859,7 @@ export default function Interview() {
                 <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
                   <PhoneOff size={20} className="text-red-400" />
                 </div>
-                <h3 className="font-display font-bold text-white text-lg">End Interview?</h3>
+                <h3 className="font-display font-bold text-foreground text-lg">End Interview?</h3>
               </div>
               <p className="text-gray-400 text-sm mb-1">
                 You've answered {answers.length} of {questions.length} questions.
@@ -871,7 +871,7 @@ export default function Interview() {
               </p>
               <div className="flex gap-2">
                 <button onClick={() => setShowExitConfirm(false)}
-                  className="flex-1 py-2.5 bg-surface-700 hover:bg-surface-600 text-white rounded-xl text-sm font-medium transition-colors cursor-pointer">
+                  className="flex-1 py-2.5 bg-surface-700 hover:bg-surface-600 text-foreground rounded-xl text-sm font-medium transition-colors cursor-pointer">
                   Continue
                 </button>
                 <button onClick={exitEarly}

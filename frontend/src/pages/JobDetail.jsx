@@ -39,16 +39,16 @@ export default function JobDetail() {
   return (
     <div className="min-h-screen bg-surface-900 p-6">
       <div className="max-w-4xl mx-auto">
-        <Link to="/jobs" className="text-gray-400 hover:text-white text-sm flex items-center gap-1 mb-6">
+        <Link to="/jobs" className="text-gray-400 hover:text-foreground text-sm flex items-center gap-1 mb-6">
           <ArrowLeft size={14} /> Back to Jobs
         </Link>
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           {/* Header */}
           <div className="glass-card p-6 mb-5">
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-display font-bold text-white">{job.title}</h1>
+                <h1 className="text-2xl font-display font-bold text-foreground">{job.title}</h1>
                 <p className="text-gray-400">{job.company}</p>
                 <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
                   {job.location && <span className="flex items-center gap-1"><MapPin size={14} />{job.location}</span>}
@@ -104,7 +104,7 @@ export default function JobDetail() {
 
           {/* Description */}
           <div className="glass-card p-6">
-            <h3 className="text-white font-semibold mb-3">Job Description</h3>
+            <h3 className="text-foreground font-semibold mb-3">Job Description</h3>
             <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">{job.description}</p>
           </div>
         </motion.div>

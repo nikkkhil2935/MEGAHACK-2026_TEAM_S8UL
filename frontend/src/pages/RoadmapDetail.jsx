@@ -60,14 +60,14 @@ export default function RoadmapDetail() {
     <div className="max-w-5xl mx-auto px-4 py-8">
       {/* Header */}
       <button onClick={() => navigate('/roadmap')}
-        className="flex items-center gap-1 text-sm text-gray-400 hover:text-white mb-4 transition-colors cursor-pointer">
+        className="flex items-center gap-1 text-sm text-gray-400 hover:text-foreground mb-4 transition-colors cursor-pointer">
         <ArrowLeft size={16} /> Back to Roadmaps
       </button>
 
       <div className="bg-surface-800 border border-white/5 rounded-xl p-6 mb-6">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-display font-bold text-white">{roadmap.skill_name}</h1>
+            <h1 className="text-2xl font-display font-bold text-foreground">{roadmap.skill_name}</h1>
             <p className="text-sm text-gray-400 mt-1">{pathData.overview}</p>
           </div>
           <div className="text-right">
@@ -99,7 +99,7 @@ export default function RoadmapDetail() {
                     {isPast ? <CheckCircle size={16} /> : week.week}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">{week.theme}</h3>
+                    <h3 className="font-semibold text-foreground">{week.theme}</h3>
                     <p className="text-xs text-gray-400">{week.goal}</p>
                   </div>
                 </div>
@@ -127,7 +127,7 @@ export default function RoadmapDetail() {
                         {r.type}
                       </span>
                       <a href={r.url} target="_blank" rel="noopener noreferrer"
-                        className="text-sm text-white hover:text-brand-400 transition-colors flex items-center gap-1">
+                        className="text-sm text-foreground hover:text-brand-400 transition-colors flex items-center gap-1">
                         {r.title} <ExternalLink size={12} />
                       </a>
                     </div>
@@ -159,7 +159,7 @@ export default function RoadmapDetail() {
                         className="flex items-center gap-3 bg-surface-700/30 rounded-lg p-2.5 hover:bg-surface-700 transition-colors">
                         {v.thumbnail && <img src={v.thumbnail} alt="" className="w-20 h-12 rounded object-cover" />}
                         <div className="min-w-0">
-                          <p className="text-xs text-white truncate">{v.title}</p>
+                          <p className="text-xs text-foreground truncate">{v.title}</p>
                           <p className="text-[10px] text-gray-500">{v.channel}</p>
                         </div>
                       </a>
@@ -179,7 +179,7 @@ export default function RoadmapDetail() {
               {/* Quiz Button */}
               {isActive && (
                 <button onClick={() => navigate(`/quiz?roadmap=${id}&week=${week.week}`)}
-                  className="mt-4 flex items-center gap-2 px-4 py-2 bg-surface-700 hover:bg-surface-600 text-white rounded-lg text-sm transition-colors cursor-pointer">
+                  className="mt-4 flex items-center gap-2 px-4 py-2 bg-surface-700 hover:bg-surface-600 text-foreground rounded-lg text-sm transition-colors cursor-pointer">
                   <Trophy size={16} className="text-yellow-400" /> Take Week {week.week} Quiz
                 </button>
               )}
@@ -193,12 +193,12 @@ export default function RoadmapDetail() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
           {pathData.practice_projects?.length > 0 && (
             <div className="bg-surface-800 border border-white/5 rounded-xl p-6">
-              <h3 className="font-semibold text-white mb-4">Practice Projects</h3>
+              <h3 className="font-semibold text-foreground mb-4">Practice Projects</h3>
               <div className="space-y-3">
                 {pathData.practice_projects.map((p, i) => (
                   <div key={i} className="bg-surface-700/50 rounded-lg px-4 py-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-white">{p.name}</span>
+                      <span className="text-sm font-medium text-foreground">{p.name}</span>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.difficulty === 'beginner' ? 'bg-green-500/20 text-green-400' : p.difficulty === 'intermediate' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
                         {p.difficulty}
                       </span>
@@ -212,7 +212,7 @@ export default function RoadmapDetail() {
 
           {pathData.interview_prep?.length > 0 && (
             <div className="bg-surface-800 border border-white/5 rounded-xl p-6">
-              <h3 className="font-semibold text-white mb-4">Interview Prep</h3>
+              <h3 className="font-semibold text-foreground mb-4">Interview Prep</h3>
               <div className="space-y-2">
                 {pathData.interview_prep.map((q, i) => (
                   <div key={i} className="flex items-start gap-2 text-sm text-gray-300">

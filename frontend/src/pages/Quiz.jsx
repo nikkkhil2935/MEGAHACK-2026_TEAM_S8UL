@@ -64,20 +64,20 @@ export default function Quiz() {
     return (
       <div className="max-w-3xl mx-auto px-4 py-8">
         <button onClick={() => navigate(`/roadmap/${roadmapId}`)}
-          className="flex items-center gap-1 text-sm text-gray-400 hover:text-white mb-6 cursor-pointer">
+          className="flex items-center gap-1 text-sm text-gray-400 hover:text-foreground mb-6 cursor-pointer">
           <ArrowLeft size={16} /> Back to Roadmap
         </button>
 
         <div className="bg-surface-800 border border-white/5 rounded-xl p-8 text-center mb-6">
           <Trophy size={48} className={`mx-auto mb-4 ${result.score_percent >= 70 ? 'text-yellow-400' : 'text-gray-500'}`} />
-          <h2 className="text-3xl font-bold text-white mb-2">{result.score_percent}%</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-2">{result.score_percent}%</h2>
           <p className="text-gray-400">{skill} — Week {week} Quiz</p>
           <p className="text-sm text-gray-500 mt-1">{result.total_earned}/{result.total_possible} points</p>
         </div>
 
         {result.feedback && (
           <div className="bg-surface-800 border border-white/5 rounded-xl p-6 mb-6">
-            <h3 className="font-semibold text-white mb-3">AI Feedback</h3>
+            <h3 className="font-semibold text-foreground mb-3">AI Feedback</h3>
             <p className="text-sm text-gray-300 mb-3">{result.feedback.overall_message}</p>
             {result.feedback.weak_areas?.length > 0 && (
               <div className="mb-2">
@@ -98,7 +98,7 @@ export default function Quiz() {
               <div className="flex items-start gap-3">
                 {r.is_correct ? <CheckCircle size={18} className="text-green-400 mt-0.5 shrink-0" /> : <XCircle size={18} className="text-red-400 mt-0.5 shrink-0" />}
                 <div>
-                  <p className="text-sm text-white">{r.question}</p>
+                  <p className="text-sm text-foreground">{r.question}</p>
                   <div className="mt-2 text-xs">
                     <span className="text-gray-400">Your answer: </span>
                     <span className={r.is_correct ? 'text-green-400' : 'text-red-400'}>{r.candidate_answer}</span>
@@ -126,12 +126,12 @@ export default function Quiz() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <button onClick={() => navigate(`/roadmap/${roadmapId}`)}
-        className="flex items-center gap-1 text-sm text-gray-400 hover:text-white mb-6 cursor-pointer">
+        className="flex items-center gap-1 text-sm text-gray-400 hover:text-foreground mb-6 cursor-pointer">
         <ArrowLeft size={16} /> Back to Roadmap
       </button>
 
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-display font-bold text-white">{skill} — Week {week} Quiz</h1>
+        <h1 className="text-lg font-display font-bold text-foreground">{skill} — Week {week} Quiz</h1>
         <span className="text-sm text-gray-400">{currentQ + 1} / {questions.length}</span>
       </div>
 
@@ -146,7 +146,7 @@ export default function Quiz() {
           <span className="text-[10px] px-2 py-0.5 bg-surface-700 rounded-full text-gray-400">{q.type} · {q.points} pts</span>
           <span className="text-[10px] text-gray-500">{q.topic}</span>
         </div>
-        <h2 className="text-lg text-white mb-6">{q.question}</h2>
+        <h2 className="text-lg text-foreground mb-6">{q.question}</h2>
 
         {q.type === 'mcq' && q.options && (
           <div className="space-y-2">
@@ -155,7 +155,7 @@ export default function Quiz() {
               const selected = answers[q.id] === letter
               return (
                 <button key={oi} onClick={() => selectAnswer(q.id, letter)}
-                  className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-colors cursor-pointer ${selected ? 'bg-brand-500/20 border border-brand-500/40 text-white' : 'bg-surface-700/50 border border-white/5 text-gray-300 hover:bg-surface-700'}`}>
+                  className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-colors cursor-pointer ${selected ? 'bg-brand-500/20 border border-brand-500/40 text-foreground' : 'bg-surface-700/50 border border-white/5 text-gray-300 hover:bg-surface-700'}`}>
                   {opt}
                 </button>
               )
@@ -167,7 +167,7 @@ export default function Quiz() {
           <div className="flex gap-3">
             {['true', 'false'].map(val => (
               <button key={val} onClick={() => selectAnswer(q.id, val)}
-                className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors cursor-pointer capitalize ${answers[q.id] === val ? 'bg-brand-500/20 border border-brand-500/40 text-white' : 'bg-surface-700/50 border border-white/5 text-gray-300 hover:bg-surface-700'}`}>
+                className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors cursor-pointer capitalize ${answers[q.id] === val ? 'bg-brand-500/20 border border-brand-500/40 text-foreground' : 'bg-surface-700/50 border border-white/5 text-gray-300 hover:bg-surface-700'}`}>
                 {val}
               </button>
             ))}
@@ -177,13 +177,13 @@ export default function Quiz() {
         {(q.type === 'fill_blank' || q.type === 'short_answer') && (
           <input value={answers[q.id] || ''} onChange={e => selectAnswer(q.id, e.target.value)}
             placeholder="Type your answer..."
-            className="w-full px-4 py-3 bg-surface-700 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500" />
+            className="w-full px-4 py-3 bg-surface-700 border border-white/10 rounded-lg text-sm text-foreground placeholder-gray-500 focus:outline-none focus:border-brand-500" />
         )}
       </motion.div>
 
       <div className="flex items-center justify-between">
         <button onClick={() => setCurrentQ(Math.max(0, currentQ - 1))} disabled={currentQ === 0}
-          className="px-4 py-2 text-sm text-gray-400 hover:text-white disabled:opacity-30 transition-colors cursor-pointer">
+          className="px-4 py-2 text-sm text-gray-400 hover:text-foreground disabled:opacity-30 transition-colors cursor-pointer">
           Previous
         </button>
         {currentQ < questions.length - 1 ? (

@@ -43,13 +43,13 @@ export default function ViewJobApplications() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <button onClick={() => navigate('/recruiter')}
-        className="flex items-center gap-1 text-sm text-gray-400 hover:text-white mb-6 transition-colors">
+        className="flex items-center gap-1 text-sm text-gray-400 hover:text-foreground mb-6 transition-colors">
         <ArrowLeft size={14} /> Back to Dashboard
       </button>
 
       {job && (
         <div className="mb-8">
-          <h1 className="text-2xl font-display font-bold text-white">{job.title}</h1>
+          <h1 className="text-2xl font-display font-bold text-foreground">{job.title}</h1>
           <p className="text-sm text-gray-400 mt-1">{job.company} {job.location ? `• ${job.location}` : ''}</p>
         </div>
       )}
@@ -79,7 +79,7 @@ export default function ViewJobApplications() {
                     </span>
                   </div>
                   <div>
-                    <div className="font-medium text-white">{app.name || app.email || 'Anonymous'}</div>
+                    <div className="font-medium text-foreground">{app.name || app.email || 'Anonymous'}</div>
                     <div className="text-xs text-gray-400">{app.email || 'No email'}</div>
                   </div>
                 </div>
@@ -96,7 +96,7 @@ export default function ViewJobApplications() {
 
               {expanded === i && (
                 <div className="px-5 pb-5 border-t border-white/5 pt-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     {app.skills?.length > 0 && (
                       <div>
                         <div className="text-xs text-gray-500 mb-1">Skills</div>

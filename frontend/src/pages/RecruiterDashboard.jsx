@@ -34,7 +34,7 @@ export default function RecruiterDashboard() {
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-display font-bold text-white">Recruiter Dashboard</h1>
+          <h1 className="text-2xl font-display font-bold text-foreground">Recruiter Dashboard</h1>
           <p className="text-sm text-gray-400 mt-1">Manage job postings and review candidates</p>
         </div>
         <Link to="/recruiter/post-job"
@@ -56,7 +56,7 @@ export default function RecruiterDashboard() {
                 <stat.icon size={20} className={`text-${stat.color}-400`} />
               </div>
               <div>
-                <div className="text-2xl font-bold text-white">{stat.value}</div>
+                <div className="text-2xl font-bold text-foreground">{stat.value}</div>
                 <div className="text-xs text-gray-400">{stat.label}</div>
               </div>
             </div>
@@ -79,7 +79,7 @@ export default function RecruiterDashboard() {
               className="bg-surface-800 border border-white/5 hover:border-brand-500/30 rounded-xl p-5 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-white">{job.title}</h3>
+                  <h3 className="font-semibold text-foreground">{job.title}</h3>
                   <p className="text-sm text-gray-400">{job.company} {job.location ? `• ${job.location}` : ''}</p>
                   <div className="flex items-center gap-3 mt-2">
                     {job.remote_policy && <span className="text-xs px-2 py-0.5 bg-surface-700 rounded text-gray-400 capitalize">{job.remote_policy}</span>}
@@ -90,7 +90,7 @@ export default function RecruiterDashboard() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <div className="text-sm font-bold text-white">{job.applicant_count || 0}</div>
+                    <div className="text-sm font-bold text-foreground">{job.applicant_count || 0}</div>
                     <div className="text-[10px] text-gray-500">applicants</div>
                   </div>
                   <Link to={`/recruiter/job/${job.id}`}

@@ -38,7 +38,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-surface-900 p-6">
       <div className="max-w-6xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-display font-bold text-white mb-1">
+          <h1 className="text-2xl font-display font-bold text-foreground mb-1">
             Welcome back, {user?.full_name?.split(' ')[0] || 'there'}
           </h1>
           <p className="text-gray-400 text-sm mb-8">Here's your career overview.</p>
@@ -56,17 +56,17 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Link to="/interview" className="glass-card p-5 hover:border-brand-500/30 transition-all group hover:-translate-y-0.5">
             <Mic size={20} className="text-brand-400 mb-3 group-hover:scale-110 transition-transform" />
-            <h3 className="text-white font-semibold mb-1">Take Mock Interview</h3>
+            <h3 className="text-foreground font-semibold mb-1">Take Mock Interview</h3>
             <p className="text-gray-500 text-sm">AI-powered voice interview with cross-examination</p>
           </Link>
           <Link to="/profile" className="glass-card p-5 hover:border-accent-500/30 transition-all group hover:-translate-y-0.5">
             <User size={20} className="text-accent-400 mb-3 group-hover:scale-110 transition-transform" />
-            <h3 className="text-white font-semibold mb-1">Update Profile</h3>
+            <h3 className="text-foreground font-semibold mb-1">Update Profile</h3>
             <p className="text-gray-500 text-sm">Import LinkedIn or upload resume</p>
           </Link>
           <Link to="/jobs" className="glass-card p-5 hover:border-green-500/30 transition-all group hover:-translate-y-0.5">
             <Target size={20} className="text-green-400 mb-3 group-hover:scale-110 transition-transform" />
-            <h3 className="text-white font-semibold mb-1">Browse Jobs</h3>
+            <h3 className="text-foreground font-semibold mb-1">Browse Jobs</h3>
             <p className="text-gray-500 text-sm">See live match scores for every role</p>
           </Link>
         </div>
@@ -74,13 +74,13 @@ export default function Dashboard() {
         {/* Recent Interviews */}
         {data?.recent_interviews?.length > 0 && (
           <div className="glass-card p-5">
-            <h2 className="text-white font-semibold mb-4">Recent Interviews</h2>
+            <h2 className="text-foreground font-semibold mb-4">Recent Interviews</h2>
             <div className="space-y-3">
               {data.recent_interviews.map(interview => (
                 <Link key={interview.id} to={`/interview/report/${interview.id}`}
                   className="flex items-center justify-between p-3 bg-surface-700 rounded-xl hover:bg-surface-600 transition-colors">
                   <div>
-                    <div className="text-sm text-white font-medium capitalize">
+                    <div className="text-sm text-foreground font-medium capitalize">
                       {interview.job_postings?.title || interview.interview_type} Interview
                     </div>
                     <div className="text-xs text-gray-500">

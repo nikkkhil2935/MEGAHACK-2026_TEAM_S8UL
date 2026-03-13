@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { MessageCircle, Send, Plus, Trash2, Loader2, Bot, User, Sparkles, Paperclip, X } from 'lucide-react'
+import { MessageCircle, Send, Plus, Trash2, Loader2, Bot, User, Sparkles, Paperclip, X, Menu } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 
@@ -24,6 +24,7 @@ export default function Tutor() {
   const [loadingSessions, setLoadingSessions] = useState(true)
   const [uploadedDocs, setUploadedDocs] = useState([])
   const [uploading, setUploading] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const fileInputRef = useRef(null)
   const bottomRef = useRef(null)
 
@@ -96,11 +97,17 @@ export default function Tutor() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 flex gap-6 h-[calc(100vh-6rem)]">
+    <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-6 h-[calc(100vh-6rem)]">
+      {/* Mobile sidebar toggle */}
+      <button onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="md:hidden flex items-center gap-2 text-sm text-gray-400 hover:text-foreground transition-colors cursor-pointer">
+        <Menu size={18} /> {sidebarOpen ? 'Hide Sessions' : 'Show Sessions'}
+      </button>
+
       {/* Sidebar */}
-      <div className="w-64 shrink-0 flex flex-col">
+      <div className={`${sidebarOpen ? 'flex' : 'hidden'} md:flex w-full md:w-64 shrink-0 flex-col`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-white">Sessions</h2>
+          <h2 className="text-sm font-semibold text-foreground">Sessions</h2>
           <button onClick={createSession}
             className="p-1.5 bg-brand-500 hover:bg-brand-600 rounded-lg transition-colors cursor-pointer">
             <Plus size={14} className="text-white" />
@@ -111,7 +118,7 @@ export default function Tutor() {
         <div className="mb-4">
           <label className="block text-[10px] text-gray-500 mb-1 uppercase tracking-wide">Mode</label>
           <select value={mode} onChange={e => setMode(e.target.value)}
-            className="w-full px-2.5 py-1.5 bg-surface-700 border border-white/10 rounded-lg text-xs text-white focus:outline-none focus:border-brand-500">
+            className="w-full px-2.5 py-1.5 bg-surface-700 border border-white/10 rounded-lg text-xs text-foreground focus:outline-none focus:border-brand-500">
             {MODES.map(m => (
               <option key={m.id} value={m.id}>{m.emoji} {m.label}</option>
             ))}
@@ -217,7 +224,7 @@ export default function Tutor() {
                 </button>
                 <input value={input} onChange={e => setInput(e.target.value)}
                   placeholder={`Ask your ${MODES.find(m => m.id === mode)?.label?.toLowerCase()} anything...`}
-                  className="flex-1 px-4 py-2.5 bg-surface-700 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500"
+                  className="flex-1 px-4 py-2.5 bg-surface-700 border border-white/10 rounded-lg text-sm text-foreground placeholder-gray-500 focus:outline-none focus:border-brand-500"
                   disabled={sending} />
                 <button type="submit" disabled={sending || !input.trim()}
                   className="px-4 py-2.5 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white rounded-lg transition-colors cursor-pointer">
