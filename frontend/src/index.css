@@ -86,83 +86,77 @@ body {
 }
 
 /* ─── Components (light default) ─── */
-.glass-card {
-  @apply backdrop-blur-sm rounded-2xl;
-  background: rgba(0,0,0,0.02);
-  border: 1px solid rgba(0,0,0,0.08);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-}
-.glass-card:hover {
-  border-color: rgba(0,0,0,0.15);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-}
-[data-theme="dark"] .glass-card {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-[data-theme="dark"] .glass-card:hover {
-  border-color: rgba(255,255,255,0.15);
-  box-shadow: 0 4px 24px rgba(255,255,255,0.03);
+@layer components {
+  .glass-card {
+    @apply backdrop-blur-sm rounded-2xl;
+    background: rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.08);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  }
+  .glass-card:hover {
+    border-color: rgba(0,0,0,0.15);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+  [data-theme="dark"] .glass-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  [data-theme="dark"] .glass-card:hover {
+    border-color: rgba(255,255,255,0.15);
+    box-shadow: 0 4px 24px rgba(255,255,255,0.03);
+  }
+
+  .btn-primary {
+    @apply font-semibold px-6 py-3 rounded-xl transition-all duration-200 cursor-pointer;
+    background: #171717;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary:hover {
+    background: #262626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .btn-primary:active {
+    transform: scale(0.97) translateY(0);
+  }
+  [data-theme="dark"] .btn-primary {
+    background: #ffffff;
+    color: #000000;
+  }
+  [data-theme="dark"] .btn-primary:hover {
+    background: #e5e5e5;
+    box-shadow: 0 4px 12px rgba(255,255,255,0.1);
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-surface-700 text-gray-700 cursor-pointer
+           px-6 py-3 rounded-xl transition-all duration-200 border border-black/10;
+  }
+  [data-theme="dark"] .btn-ghost {
+    @apply text-gray-300 border-white/10;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl px-4 py-3 placeholder-gray-400
+           focus:outline-none focus:ring-2 focus:ring-gray-900/20
+           transition-colors duration-200;
+    background: #f5f5f5;
+    border: 1px solid rgba(0,0,0,0.1);
+    color: #171717;
+  }
+  [data-theme="dark"] .input-field {
+    background: #0a0a0a;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+  }
+
+  [data-theme="dark"] .input-field:focus {
+    @apply ring-white/20;
+  }
 }
 
-.btn-primary {
-  @apply font-semibold px-6 py-3 rounded-xl transition-all duration-200 cursor-pointer;
-  background: #171717;
-  color: #ffffff;
-  position: relative;
-  overflow: hidden;
-}
-.btn-primary:hover {
-  background: #262626;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-.btn-primary:active {
-  transform: scale(0.97) translateY(0);
-}
-[data-theme="dark"] .btn-primary {
-  background: #ffffff;
-  color: #000000;
-}
-[data-theme="dark"] .btn-primary:hover {
-  background: #e5e5e5;
-  box-shadow: 0 4px 12px rgba(255,255,255,0.1);
-}
-
-.btn-ghost {
-  @apply bg-transparent hover:bg-surface-700 text-gray-700 cursor-pointer
-         px-6 py-3 rounded-xl transition-all duration-200 border border-black/10;
-}
-[data-theme="dark"] .btn-ghost {
-  @apply text-gray-300 border-white/10;
-}
-
-.input-field {
-  @apply w-full rounded-xl px-4 py-3 placeholder-gray-400
-         focus:outline-none focus:ring-2 focus:ring-gray-900/20
-         transition-colors duration-200;
-  background: #f5f5f5;
-  border: 1px solid rgba(0,0,0,0.1);
-  color: #171717;
-}
-[data-theme="dark"] .input-field {
-  background: #0a0a0a;
-  border: 1px solid rgba(255,255,255,0.1);
-  color: white;
-}
-
-/* Hide scrollbar for Chrome, Safari and Opera */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-/* Hide scrollbar for IE, Edge and Firefox */
-.no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-[data-theme="dark"] .input-field:focus {
-  @apply ring-white/20;
-}
 
 /* ─── Light mode border fixes ─── */
 [data-theme="light"] .border-white\/5 {

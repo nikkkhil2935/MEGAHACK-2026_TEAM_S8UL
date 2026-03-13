@@ -4,6 +4,7 @@ import { Mail, Lock, LogIn } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/auth'
 import FormLabel from '../components/auth/FormLabel'
+import Logo from '../components/common/Logo'
 import { getHomeRoute } from '../constants'
 
 export default function Login() {
@@ -45,8 +46,8 @@ export default function Login() {
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl" />
 
       <div className="bg-white dark:bg-surface-900 rounded-[32px] p-8 md:p-12 w-full max-w-md shadow-lg border border-black/5 dark:border-white/5 relative z-10 hover:shadow-xl transition-shadow">
-        <div className="text-center mb-10">
-          <div className="w-14 h-14 rounded-2xl bg-brand-500 flex items-center justify-center text-[#c1ff72] text-xl font-bold mx-auto mb-6 shadow-md hover:scale-105 transition-transform">CB</div>
+        <div className="text-center mb-10 flex flex-col items-center">
+          <Logo size="lg" className="mb-6 hover:scale-105 transition-transform" />
           <h1 className="text-3xl font-display font-medium text-foreground tracking-tight">Welcome Back</h1>
           <p className="text-gray-500 text-sm mt-3 font-medium">Please enter your details to continue.</p>
         </div>
@@ -72,32 +73,32 @@ export default function Login() {
           <div className="flex-1 h-px bg-gray-200 dark:bg-surface-700" />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <div className="relative">
               <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-                className="w-full rounded-2xl px-5 py-3.5 bg-[#f8f9fa] dark:bg-surface-700 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c1ff72] transition-colors border border-transparent focus:border-transparent text-foreground" 
+                className="w-full rounded-2xl px-5 py-4 bg-transparent border-2 border-gray-100 dark:border-surface-700 text-sm placeholder-gray-400 focus:outline-none focus:border-gray-300 dark:focus:border-surface-500 transition-colors text-foreground" 
                 placeholder="Email Address" required />
             </div>
           </div>
           <div>
             <div className="relative">
               <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                className="w-full rounded-2xl px-5 py-3.5 bg-[#f8f9fa] dark:bg-surface-700 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c1ff72] transition-colors border border-transparent focus:border-transparent text-foreground" 
+                className="w-full rounded-2xl px-5 py-4 bg-transparent border-2 border-gray-100 dark:border-surface-700 text-sm placeholder-gray-400 focus:outline-none focus:border-gray-300 dark:focus:border-surface-500 transition-colors text-foreground" 
                 placeholder="Password" required />
             </div>
           </div>
 
           <button type="submit" disabled={loading}
-            className="w-full bg-[#1a1a1a] dark:bg-white text-white dark:text-black py-4 rounded-2xl text-sm font-bold shadow-md hover:bg-black dark:hover:bg-gray-100 transition-all hover:-translate-y-0.5 disabled:opacity-50 mt-4 cursor-pointer">
+            className="w-full bg-[#1a1a1a] dark:bg-white text-white dark:text-black py-4 rounded-2xl text-sm font-bold shadow-md hover:bg-black dark:hover:bg-gray-100 transition-all disabled:opacity-50 mt-2 flex items-center justify-center gap-2">
             {loading ? <div className="w-4 h-4 border-2 border-white dark:border-black border-t-transparent rounded-full animate-spin mx-auto" /> :
-              'Sign in'}
+              <><LogIn size={18} /> Sign In</>}
           </button>
         </form>
 
         <p className="text-center text-gray-500 text-sm mt-8 font-medium">
           Don't have an account?{' '}
-          <Link to="/register" className="text-foreground hover:text-[#c1ff72] dark:hover:text-[#c1ff72] font-bold transition-colors">Sign up</Link>
+          <Link to="/register" className="text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors font-bold">Sign Up</Link>
         </p>
       </div>
     </div>

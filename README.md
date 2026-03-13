@@ -80,13 +80,17 @@ Upload PDFs or paste study material. The AI tutor answers questions **using your
 | **Interview Reports** | Detailed AI-generated report with scores, strengths, improvements | ✅ |
 | **Interview History** | View all past interviews and reports | ✅ |
 | **Profile Import** | Paste LinkedIn text or upload PDF resume → AI parses everything | ✅ |
-| **Resume Parsing** | Upload PDF → AI extracts skills, experience, projects, education | ✅ |
+| **Resume Parsing & Improver** | Upload PDF → AI extracts skills/experience, then suggests actionable AI-powered resume improvements | ✅ |
+| **GitHub Analyzer** | Input GitHub username to analyze repositories, code quality, and tech stack | ✅ |
 | **Job Browsing** | Browse all posted jobs with live match scores | ✅ |
 | **Job Detail** | See full JD + your match %, missing skills, matching skills | ✅ |
 | **Job Applications** | One-click apply to jobs | ✅ |
 | **Learning Roadmaps** | AI generates 8-week personalized learning paths | ✅ |
 | **AI Tutor** | NotebookLM-style chat with document upload context | ✅ |
 | **Quizzes** | AI-generated quizzes per roadmap week | ✅ |
+| **Gamification System** | Earn XP, level up, unlock badges, and track progress with dynamic UI celebrations | ✅ |
+| **Messaging & Scheduling** | Gamified messaging and dynamic scheduling integrated with Google Calendar widgets | ✅ |
+| **Salary Predictor** | AI-driven insights to predict expected salary based on your skills, experience, and role | ✅ |
 | **Dark/Light Theme** | Toggle with Sun/Moon button, persisted in localStorage | ✅ |
 | **PWA** | Installable as a Progressive Web App | ✅ |
 | **Responsive** | Mobile-first design, works on all screen sizes | ✅ |
@@ -99,6 +103,8 @@ Upload PDFs or paste study material. The AI tutor answers questions **using your
 | **Recruiter Dashboard** | Overview stats, posted jobs, applicant counts | ✅ |
 | **Post Jobs** | Create job postings with skills, tech stack, requirements | ✅ |
 | **View Applicants** | See all applicants per job, sorted by AI match score | ✅ |
+| **Recruiter Analytics** | Deep analytical insights into candidate pools and job application metrics | ✅ |
+| **AI Calling System** | Automated or assisted AI calling tools to directly connect with matched candidates | ✅ |
 | **Role-Based Auth** | Separate flows for candidates vs recruiters | ✅ |
 
 ---
@@ -218,7 +224,12 @@ CareerBridge-AI/
 │   │   ├── tutor.js                 # AI chat + document upload
 │   │   ├── roadmap.js               # Generate & manage roadmaps
 │   │   ├── tts.js                   # ElevenLabs text-to-speech
-│   │   └── dashboard.js             # Candidate stats aggregation
+│   │   ├── dashboard.js             # Candidate stats aggregation
+│   │   ├── github.js                # GitHub profile analysis
+│   │   ├── ranking.js               # Leaderboard/Gamification logic
+│   │   ├── resumeImprover.js        # AI-driven resume improvement
+│   │   ├── salary.js                # AI salary predictions
+│   │   └── messages.js              # In-app messaging & scheduling
 │   └── services/
 │       ├── groq/
 │       │   ├── client.js            # Groq SDK: groqJSON, groqChat, transcribeAudio
@@ -265,7 +276,13 @@ CareerBridge-AI/
 │       │   ├── Tutor.jsx            # AI tutor chat + doc upload
 │       │   ├── RecruiterDashboard.jsx # Recruiter overview
 │       │   ├── PostJob.jsx          # Job posting form
-│       │   └── ViewJobApplications.jsx # Applicant list per job
+│       │   ├── ViewJobApplications.jsx # Applicant list per job
+│       │   ├── GitHubAnalyzer.jsx   # GitHub stat visualization
+│       │   ├── SalaryPredictor.jsx  # AI Salary estimation widget
+│       │   ├── ResumeImprover.jsx   # AI Resume rewriting tool
+│       │   ├── RecruiterAnalytics.jsx # Hiring insights & charts
+│       │   ├── MessagingSchedulerGamified.jsx # Gamified messages
+│       │   └── AICallingSystem.jsx  # AI connection & calling tool
 │       ├── services/
 │       │   └── api.js               # Axios instance + interceptors
 │       └── store/
@@ -336,11 +353,16 @@ CareerBridge-AI/
 | `POST` | `/api/tutor/sessions` | Create new session | ✅ |
 | `DELETE` | `/api/tutor/sessions/:id` | Delete session | ✅ |
 
-### Other
+### Other Services
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
+| `POST` | `/api/target-roles/predict-salary` | AI salary prediction based on skills | ✅ |
+| `POST` | `/api/resume/improve` | Generate AI resume improvements | ✅ |
+| `GET` | `/api/github/analyze/:username` | Fetch & analyze GitHub profile | ✅ |
 | `POST` | `/api/tts/speak` | Text-to-speech (ElevenLabs) | ✅ |
 | `GET` | `/api/dashboard/candidate` | Candidate stats overview | ✅ |
+| `GET` | `/api/dashboard/recruiter/analytics`| Recruiter analytics dashboard | ✅ |
+| `GET` | `/api/messages` | Gamified messaging schedules | ✅ |
 
 ---
 
@@ -349,13 +371,15 @@ CareerBridge-AI/
 ### Core Tables (Supabase PostgreSQL)
 
 ```sql
-profiles          — User profiles (name, role, skills, experience, projects, education)
+profiles          — User profiles (name, role, xp, level, badges, skills, experience, projects)
 job_postings      — Job listings (title, company, skills, description, recruiter_id)
 applications      — Job applications (user_id, job_id, match_score, status)
 interview_sessions — Interview data (questions, answers, scores, integrity_events)
 learning_roadmaps — AI-generated learning paths (skill, weeks, progress)
 tutor_chats       — AI tutor chat sessions (messages, context documents)
 quiz_attempts     — Quiz results (score, answers, feedback)
+messages          — In-app messaging and gamified interactions
+recruiter_analytics — Deep insights caching and aggregate tracking data
 ```
 
 ---
