@@ -20,7 +20,7 @@ export default function Login() {
     try {
       const user = await login(email, password)
       toast.success('Welcome back!')
-      navigate(getHomeRoute(user?.role))
+      navigate(getHomeRoute(user?.role), { replace: true })
     } catch (err) {
       toast.error(err.response?.data?.error || 'Login failed')
     } finally {

@@ -24,7 +24,9 @@ function StatCard({ icon: Icon, label, value, color = 'text-brand-400' }) {
 
 export default function Dashboard() {
   const { user } = useAuthStore()
-  const gamStats = useGamificationStore(s => s.getStats())
+  const getStats = useGamificationStore(s => s.getStats)
+  const xp = useGamificationStore(s => s.xp)
+  const gamStats = getStats()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
 
