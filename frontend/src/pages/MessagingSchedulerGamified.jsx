@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Send, Paperclip, Mic, Smile, Calendar, Video, Phone, MapPin, Copy, Check, CheckCheck, Clock, X, Award, Flame, Lock, ChevronRight, ChevronLeft, MessageSquare } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { generateICS, downloadICS, generateMeetingLink } from '../utils/calendarUtils'
 
 // ═══ SECTION: XP LEVELS & BADGE DEFINITIONS ═══
 const XP_LEVELS = [
@@ -89,17 +91,18 @@ export default function MessagingSchedulerGamified() {
   const [showScheduler, setShowScheduler] = useState(false)
   const [schedStep, setSchedStep] = useState(0)
   const [meetType, setMeetType] = useState(null)
-  const [meetDate, setMeetDate] = useState(null)
-  const [meetTime, setMeetTime] = useState(null)
+  const [meetDate, setMeetDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  })
+  const [meetTime, setMeetTime] = useState('10:00')
   const [meetDuration, setMeetDuration] = useState(45)
   const [meetTitle, setMeetTitle] = useState('')
   const [meetAgenda, setMeetAgenda] = useState('')
   const [calInvite, setCalInvite] = useState(true)
   const [reminder, setReminder] = useState(true)
-  const [meetLink] = useState(() => {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
-    return Array.from({length: 6}, () => chars[Math.floor(Math.random() * chars.length)]).join('')
-  })
+  const [meetLink] = useState(generateMeetingLink('jitsi'))
   const [copied, setCopied] = useState(false)
   
   // Gamification
@@ -570,30 +573,14 @@ export default function MessagingSchedulerGamified() {
                 <div className="space-y-4">
                   <div>
                     <label className="text-gray-400 text-xs mb-2 block">Select Date</label>
-                    <div className="flex gap-2 overflow-x-auto pb-2">
-                      {getDays().map(d => (
-                        <button key={d.key} onClick={() => setMeetDate(d.key)}
-                          className={`shrink-0 flex flex-col items-center px-3 py-2 rounded-xl text-center transition-all ${meetDate === d.key ? 'bg-indigo-500 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
-                          <span className="text-[10px] uppercase">{d.label}</span>
-                          <span className="text-lg font-bold">{d.date}</span>
-                          <span className="text-[10px]">{d.month}</span>
-                        </button>
-                      ))}
-                    </div>
+                    <input type="date" value={meetDate} onChange={e => setMeetDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
                   </div>
                   <div>
                     <label className="text-gray-400 text-xs mb-2 block">Select Time</label>
-                    <div className="grid grid-cols-4 gap-1.5 max-h-36 overflow-y-auto">
-                      {getTimeSlots().map(s => {
-                        const booked = bookedSlots.includes(s)
-                        return (
-                          <button key={s} onClick={() => !booked && setMeetTime(s)} disabled={booked}
-                            className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${booked ? 'bg-gray-800 text-gray-600 cursor-not-allowed line-through' : meetTime === s ? 'bg-indigo-500 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}>
-                            {s}
-                          </button>
-                        )
-                      })}
-                    </div>
+                    <input type="time" value={meetTime} onChange={e => setMeetTime(e.target.value)}
+                      className="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
                   </div>
                   <div>
                     <label className="text-gray-400 text-xs mb-2 block">Duration</label>
@@ -608,7 +595,7 @@ export default function MessagingSchedulerGamified() {
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => setSchedStep(0)} className="flex-1 py-2.5 bg-gray-700 text-white text-sm font-medium rounded-xl hover:bg-gray-600 transition-colors">Back</button>
-                    <button onClick={() => meetDate !== null && meetTime && setSchedStep(2)} disabled={meetDate === null || !meetTime}
+                    <button onClick={() => meetDate && meetTime && setSchedStep(2)} disabled={!meetDate || !meetTime}
                       className="flex-1 py-2.5 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 text-white text-sm font-medium rounded-xl transition-colors">Next</button>
                   </div>
                 </div>
@@ -647,13 +634,35 @@ export default function MessagingSchedulerGamified() {
                   <div>
                     <label className="text-gray-400 text-xs mb-1 block">Meeting Link</label>
                     <div className="flex items-center gap-2 bg-gray-800 border border-white/10 rounded-xl px-3 py-2">
-                      <span className="text-sm text-gray-300 flex-1">careerbridge.meet/{meetLink}</span>
-                      <button onClick={() => { setCopied(true); setTimeout(() => setCopied(false), 1500) }}
-                        className="text-gray-400 hover:text-white transition-colors">
+                      <span className="text-sm text-gray-300 flex-1 break-all">{meetLink}</span>
+                      <button onClick={() => {
+                        navigator.clipboard.writeText(meetLink)
+                        setCopied(true)
+                        setTimeout(() => setCopied(false), 1500)
+                      }}
+                        className="text-gray-400 hover:text-white transition-colors shrink-0">
                         {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
                       </button>
                     </div>
                   </div>
+
+                  {/* Download Calendar File Button */}
+                  <button onClick={() => {
+                    if (meetDate && meetTime && meetTitle) {
+                      const icsContent = generateICS({
+                        title: meetTitle,
+                        description: meetAgenda || 'Meeting scheduled via CareerBridge',
+                        start: new Date(`${meetDate}T${meetTime}`),
+                        duration: meetDuration,
+                        location: meetLink,
+                      })
+                      downloadICS(`meeting-${meetDate}.ics`, icsContent)
+                      toast.success('Calendar file downloaded!')
+                    }
+                  }}
+                    className="w-full py-2 px-3 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-xl text-sm text-green-400 transition-colors font-medium">
+                    📥 Download Calendar (.ics)
+                  </button>
                   <div className="flex gap-2">
                     <button onClick={() => setSchedStep(1)} className="flex-1 py-2.5 bg-gray-700 text-white text-sm font-medium rounded-xl hover:bg-gray-600 transition-colors">Back</button>
                     <button onClick={() => setSchedStep(3)} className="flex-1 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-xl transition-colors">Next</button>

@@ -2,12 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Mic, MicOff, Volume2, StopCircle, Clock, EyeOff, AlertTriangle,
-  Globe, Send, PhoneOff, User, Bot, Loader2, Upload
+  Mic, MicOff, Volume2, StopCircle, Clock, AlertTriangle,
+  Globe, Send, PhoneOff, User, Bot, Loader2, Upload, Calendar, MapPin, Copy, Check
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useAuthStore } from '../store/auth'
+import { generateICS, downloadICS, formatDateTime, getNextInterviewSlot, generateMeetingLink } from '../utils/calendarUtils'
 
 /* ────── ElevenLabs TTS with browser fallback ────── */
 async function speak(text, lang = 'en') {
@@ -125,6 +126,15 @@ export default function Interview() {
   const [textInput, setTextInput] = useState('')
   const [jdText, setJdText] = useState('')
   const [isTranscribing, setIsTranscribing] = useState(false)
+
+  // Calendar scheduling
+  const [scheduledDate, setScheduledDate] = useState(() => {
+    const nextSlot = getNextInterviewSlot()
+    return nextSlot.toISOString().split('T')[0]
+  })
+  const [scheduledTime, setScheduledTime] = useState('10:00')
+  const [meetingLink, setMeetingLink] = useState(generateMeetingLink())
+  const [copiedLink, setCopiedLink] = useState(false)
 
   // Conversation log: { role: 'ai'|'user', text, time, type? }
   const [conversation, setConversation] = useState([])
@@ -426,6 +436,62 @@ export default function Interview() {
               <option value="zh">Mandarin</option><option value="pt">Portuguese</option>
             </select>
           </div>
+
+          {/* Calendar Scheduling */}
+          <div className="bg-surface-800/50 border border-brand-500/20 rounded-xl p-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1">
+              <Calendar size={12} /> Schedule This Interview
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Date</label>
+                <input type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)}
+                  className="input-field text-xs" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Time</label>
+                <input type="time" value={scheduledTime} onChange={e => setScheduledTime(e.target.value)}
+                  className="input-field text-xs" />
+              </div>
+            </div>
+
+            {/* Meeting Link */}
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block flex items-center gap-1">
+                <MapPin size={12} /> Meeting Link
+              </label>
+              <div className="flex gap-2">
+                <input type="text" value={meetingLink} readOnly
+                  className="input-field text-xs flex-1 bg-surface-700/50" />
+                <button onClick={() => {
+                  navigator.clipboard.writeText(meetingLink)
+                  setCopiedLink(true)
+                  setTimeout(() => setCopiedLink(false), 2000)
+                }}
+                  className="px-2 py-1 bg-brand-500/20 hover:bg-brand-500/30 rounded text-brand-300 transition-colors">
+                  {copiedLink ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Download Calendar */}
+            <button onClick={() => {
+              const icsContent = generateICS({
+                title: `AI Mock Interview - ${config.type} (${config.difficulty})`,
+                description: 'CareerBridge AI Mock Interview Session',
+                start: new Date(`${scheduledDate}T${scheduledTime}`),
+                duration: 45,
+                location: meetingLink,
+              })
+              downloadICS(`interview-${scheduledDate}.ics`, icsContent)
+              toast.success('Calendar file downloaded!')
+            }}
+              className="w-full mt-3 px-3 py-2 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 rounded-lg text-xs text-brand-300 transition-colors cursor-pointer">
+              📥 Download Calendar File
+            </button>
+          </div>
+
           <div>
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block flex items-center gap-1"><Upload size={12} /> Job Description (optional)</label>
             <textarea
