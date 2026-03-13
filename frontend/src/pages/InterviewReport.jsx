@@ -5,8 +5,14 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip
 } from 'recharts'
-import { CheckCircle, XCircle, AlertTriangle, Clock, Shield, TrendingUp } from 'lucide-react'
+import { CheckCircle, XCircle, AlertTriangle, Clock, Shield, TrendingUp, Users } from 'lucide-react'
 import api from '../services/api'
+
+const PANELISTS = {
+  alex: { name: 'Alex Chen', role: 'Technical Lead', color: '#0fa8a8' },
+  sarah: { name: 'Sarah Miller', role: 'HR Manager', color: '#a855f7' },
+  david: { name: 'David Park', role: 'Behavioral Analyst', color: '#f59e0b' },
+}
 
 export default function InterviewReport() {
   const { id } = useParams()
@@ -85,15 +91,45 @@ export default function InterviewReport() {
 
         {/* Tabs */}
         <div className="flex gap-1 p-1 bg-surface-800 rounded-xl mb-6">
-          {['overview', 'questions', 'replay', 'integrity'].map(tab => (
+          {['overview', ...(session.panel_mode ? ['panel'] : []), 'questions', 'replay', 'integrity'].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium capitalize transition-all cursor-pointer ${
                 activeTab === tab ? 'bg-surface-700 text-foreground shadow' : 'text-gray-400 hover:text-gray-200'
               }`}>
-              {tab}
+              {tab === 'panel' ? 'Panel' : tab}
             </button>
           ))}
         </div>
+
+        {/* PANEL */}
+        {activeTab === 'panel' && session.panel_mode && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {(report.panelist_verdicts || []).map((pv, i) => {
+                const panelist = PANELISTS[pv.panelist_id] || {}
+                return (
+                  <div key={i} className="glass-card p-5 border-t-2" style={{ borderTopColor: panelist.color || '#666' }}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                        style={{ background: panelist.color || '#666' }}>
+                        {(pv.panelist_name || 'P')[0]}
+                      </div>
+                      <div>
+                        <p className="text-foreground font-medium text-sm">{pv.panelist_name}</p>
+                        <p className="text-gray-500 text-xs">{pv.role}</p>
+                      </div>
+                    </div>
+                    <div className={`text-3xl font-display font-bold mb-2 ${scoreColor(pv.score)}`}>{pv.score}<span className="text-base font-normal text-gray-600">/100</span></div>
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-3 ${
+                      pv.verdict === 'Yes' ? 'bg-green-500/20 text-green-300' : pv.verdict === 'No' ? 'bg-red-500/20 text-red-300' : 'bg-yellow-500/20 text-yellow-300'
+                    }`}>{pv.verdict}</span>
+                    <p className="text-sm text-gray-300 leading-relaxed">{pv.summary}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* OVERVIEW */}
         {activeTab === 'overview' && (
@@ -191,6 +227,7 @@ export default function InterviewReport() {
             {session.questions?.map((q, i) => {
               const a = session.answers?.[i]
               const score = a?.evaluation?.overall_score || 0
+              const panelist = q.panelist ? PANELISTS[q.panelist] : null
               return (
                 <div key={i} className="glass-card p-5">
                   <div className="flex items-start justify-between gap-4 mb-3">
@@ -198,6 +235,11 @@ export default function InterviewReport() {
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-xs font-bold bg-surface-700 text-gray-400 px-2 py-0.5 rounded">Q{i + 1}</span>
                         <span className="text-xs text-gray-500 capitalize">{q.type} &middot; {q.difficulty}</span>
+                        {panelist && (
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: `${panelist.color}20`, color: panelist.color }}>
+                            {panelist.name}
+                          </span>
+                        )}
                       </div>
                       <p className="text-foreground font-medium text-sm">{q.question}</p>
                     </div>

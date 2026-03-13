@@ -44,16 +44,26 @@ app.use('/api/linkedin', require('./routes/linkedin'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/interview', require('./routes/interview'));
 app.use('/api/dashboard', require('./routes/dashboard'));
-app.use('/api/tutor',     require('./routes/tutor'));
-app.use('/api/roadmap',   require('./routes/roadmap'));
-app.use('/api/quiz',      require('./routes/quiz'));
-app.use('/api/tts',       require('./routes/tts'));
+app.use('/api/tutor', require('./routes/tutor'));
+app.use('/api/roadmap', require('./routes/roadmap'));
+app.use('/api/quiz', require('./routes/quiz'));
+app.use('/api/tts', require('./routes/tts'));
+app.use('/api/salary', require('./routes/salary'));
+app.use('/api/ranking', require('./routes/ranking'));
+app.use('/api/resume-improver', require('./routes/resumeImprover'));
+app.use('/api/github', require('./routes/github'));
+app.use('/api/messages', require('./routes/messages'));
 
-// Socket.io: Real-time interview events
+// Socket.io: Real-time interview events + messaging
 io.on('connection', (socket) => {
   socket.on('join_interview', (sessionId) => {
     socket.join(sessionId);
     console.log(`Socket joined interview: ${sessionId}`);
+  });
+
+  // Messaging: user joins their own room to receive messages
+  socket.on('join_user', (userId) => {
+    socket.join(`user_${userId}`);
   });
 
   socket.on('eye_drift', (data) => {

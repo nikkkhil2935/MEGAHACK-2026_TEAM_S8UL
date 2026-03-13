@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { MapPin, ArrowLeft, Send, Map } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import { useGamificationStore } from '../store/gamification'
 
 export default function JobDetail() {
   const { id } = useParams()
@@ -11,6 +12,7 @@ export default function JobDetail() {
   const [job, setJob] = useState(null)
   const [match, setMatch] = useState(null)
   const [applying, setApplying] = useState(false)
+  const { awardXP } = useGamificationStore()
 
   useEffect(() => {
     api.get(`/jobs/${id}`).then(r => setJob(r.data))
@@ -22,6 +24,7 @@ export default function JobDetail() {
     try {
       await api.post(`/jobs/${id}/apply`)
       toast.success('Application submitted!')
+      awardXP(20, 'Applied for a Job 💼')
     } catch (err) {
       toast.error(err.response?.data?.error || 'Application failed')
     } finally {

@@ -199,6 +199,20 @@ CREATE TABLE outreach_templates (
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- DIRECT MESSAGES (recruiter <-> candidate)
+CREATE TABLE messages (
+  id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  sender_id    UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  receiver_id  UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  content      TEXT NOT NULL,
+  read         BOOLEAN DEFAULT FALSE,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_messages_sender ON messages(sender_id);
+CREATE INDEX idx_messages_receiver ON messages(receiver_id);
+CREATE INDEX idx_messages_created ON messages(created_at DESC);
+
 -- ROW LEVEL SECURITY (enable on ALL public tables)
 ALTER TABLE profiles             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE candidate_profiles   ENABLE ROW LEVEL SECURITY;
@@ -214,6 +228,7 @@ ALTER TABLE learning_roadmaps    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quiz_attempts        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE market_pulse         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE outreach_templates   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages             ENABLE ROW LEVEL SECURITY;
 
 -- POLICIES
 CREATE POLICY "Users see own profile" ON profiles
@@ -265,3 +280,6 @@ CREATE POLICY "Anyone can view market pulse" ON market_pulse
 
 CREATE POLICY "Candidates see own templates" ON outreach_templates
   FOR ALL USING (auth.uid() = candidate_id);
+
+CREATE POLICY "Users see own messages" ON messages
+  FOR ALL USING (auth.uid() = sender_id OR auth.uid() = receiver_id);

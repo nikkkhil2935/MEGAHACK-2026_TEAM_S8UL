@@ -3,12 +3,18 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, MicOff, Volume2, StopCircle, Clock, AlertTriangle,
-  Globe, Send, PhoneOff, User, Bot, Loader2, Upload, Calendar, MapPin, Copy, Check
+  Globe, Send, PhoneOff, User, Bot, Loader2, Upload, Calendar, MapPin, Copy, Check, EyeOff, Users
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useAuthStore } from '../store/auth'
 import { generateICS, downloadICS, formatDateTime, getNextInterviewSlot, generateMeetingLink } from '../utils/calendarUtils'
+
+const PANELISTS = {
+  alex: { name: 'Alex Chen', role: 'Technical Lead', color: '#0fa8a8' },
+  sarah: { name: 'Sarah Miller', role: 'HR Manager', color: '#a855f7' },
+  david: { name: 'David Park', role: 'Behavioral Analyst', color: '#f59e0b' },
+}
 
 /* ────── ElevenLabs TTS with browser fallback ────── */
 async function speak(text, lang = 'en') {
@@ -120,7 +126,8 @@ export default function Interview() {
   const [config, setConfig] = useState({
     type: 'mixed', difficulty: 'mid',
     language: user?.preferred_language || 'en',
-    job_id: jobId
+    job_id: jobId,
+    panel_mode: false
   })
   const [inputMode, setInputMode] = useState('voice')
   const [textInput, setTextInput] = useState('')
@@ -214,8 +221,8 @@ export default function Interview() {
   }
 
   /* ── AI adds message to conversation ── */
-  function addAIMessage(text, type = 'question') {
-    setConversation(prev => [...prev, { role: 'ai', text, time: new Date(), type }])
+  function addAIMessage(text, type = 'question', panelist = null) {
+    setConversation(prev => [...prev, { role: 'ai', text, time: new Date(), type, panelist }])
   }
   function addUserMessage(text) {
     setConversation(prev => [...prev, { role: 'user', text, time: new Date() }])
@@ -226,13 +233,15 @@ export default function Interview() {
     try {
       await startCamera()
       setPhase('loading')
-      const { data } = await api.post('/interview/start', { ...config, interview_type: config.type, jd_text: jdText || undefined })
+      const { data } = await api.post('/interview/start', { ...config, interview_type: config.type, panel_mode: config.panel_mode, jd_text: jdText || undefined })
       setSessionId(data.session_id)
       setQuestions(data.questions)
       startTimer()
 
       // Greeting
-      const greeting = `Hello ${user?.full_name?.split(' ')[0] || 'there'}! Welcome to your interview. I'll be your interviewer today. Let's get started with the first question.`
+      const greeting = config.panel_mode
+        ? `Hello ${user?.full_name?.split(' ')[0] || 'there'}! Welcome to your panel interview. You'll be interviewed by Alex Chen (Technical Lead), Sarah Miller (HR Manager), and David Park (Behavioral Analyst). Let's begin with the first question.`
+        : `Hello ${user?.full_name?.split(' ')[0] || 'there'}! Welcome to your interview. I'll be your interviewer today. Let's get started with the first question.`
       setConversation([{ role: 'ai', text: greeting, time: new Date(), type: 'greeting' }])
       setPhase('active')
       setAiSpeaking(true)
@@ -249,7 +258,7 @@ export default function Interview() {
 
   async function askQuestion(question) {
     const q = question.question
-    addAIMessage(q, question.type)
+    addAIMessage(q, question.type, question.panelist)
     setAiSpeaking(true)
     await speak(q, config.language)
     setAiSpeaking(false)
@@ -400,6 +409,36 @@ export default function Interview() {
         <p className="text-gray-400 text-sm mb-8">A live one-to-one conversation with an AI interviewer. Record your answers — transcribed by Groq Whisper AI for high accuracy.</p>
 
         <div className="space-y-4 mb-6">
+          {/* Interview Mode: 1-on-1 vs Panel */}
+          <div>
+            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block">Interview Mode</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setConfig(p => ({ ...p, panel_mode: false }))}
+                className={`py-2.5 px-4 rounded-xl text-sm font-medium border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  !config.panel_mode ? 'bg-brand-500/20 border-brand-500/50 text-brand-300' : 'bg-surface-700 border-white/5 text-gray-400 hover:border-white/20'
+                }`}>
+                <User size={14} /> 1-on-1
+              </button>
+              <button onClick={() => setConfig(p => ({ ...p, panel_mode: true }))}
+                className={`py-2.5 px-4 rounded-xl text-sm font-medium border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  config.panel_mode ? 'bg-brand-500/20 border-brand-500/50 text-brand-300' : 'bg-surface-700 border-white/5 text-gray-400 hover:border-white/20'
+                }`}>
+                <Users size={14} /> Panel (3 Interviewers)
+              </button>
+            </div>
+            {config.panel_mode && (
+              <div className="mt-2 p-3 bg-surface-800 rounded-lg border border-white/5 space-y-1">
+                {Object.entries(PANELISTS).map(([id, p]) => (
+                  <div key={id} className="flex items-center gap-2 text-xs">
+                    <div className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+                    <span className="text-foreground font-medium">{p.name}</span>
+                    <span className="text-gray-500">— {p.role}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block">Interview Type</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -686,14 +725,19 @@ export default function Interview() {
         <div className="w-full md:w-[30%] border-t md:border-l md:border-t-0 border-white/5 flex flex-col bg-surface-900 overflow-hidden">
           {/* Conversation log */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            {conversation.map((msg, i) => (
+            {conversation.map((msg, i) => {
+              const panelist = msg.panelist ? PANELISTS[msg.panelist] : null
+              return (
               <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                 <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5 ${
-                  msg.role === 'ai' ? 'bg-brand-500/20' : 'bg-accent-500/20'
-                }`}>
+                    msg.role === 'ai'
+                      ? (panelist ? '' : 'bg-brand-500/20')
+                      : 'bg-accent-500/20'
+                  }`}
+                  style={panelist ? { background: `${panelist.color}30` } : undefined}>
                   {msg.role === 'ai'
-                    ? <Bot size={12} className="text-brand-400" />
+                    ? <Bot size={12} style={panelist ? { color: panelist.color } : undefined} className={!panelist ? 'text-brand-400' : ''} />
                     : <User size={12} className="text-accent-400" />}
                 </div>
                 <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
@@ -701,7 +745,12 @@ export default function Interview() {
                     ? 'bg-surface-800 text-gray-200 border border-white/5'
                     : 'bg-brand-500/15 text-foreground border border-brand-500/20'
                 }`}>
-                  {msg.type && msg.role === 'ai' && msg.type !== 'greeting' && msg.type !== 'transition' && msg.type !== 'closing' && msg.type !== 'error' && msg.type !== 'followup-intro' && (
+                  {panelist && msg.role === 'ai' && (
+                    <span className="text-[9px] font-bold uppercase tracking-wider block mb-1" style={{ color: panelist.color }}>
+                      {panelist.name} · {panelist.role}
+                    </span>
+                  )}
+                  {!panelist && msg.type && msg.role === 'ai' && msg.type !== 'greeting' && msg.type !== 'transition' && msg.type !== 'closing' && msg.type !== 'error' && msg.type !== 'followup-intro' && (
                     <span className={`text-[9px] font-bold uppercase tracking-wider block mb-1 ${
                       msg.type === 'followup' ? 'text-yellow-400' : 'text-brand-400'
                     }`}>
@@ -711,7 +760,8 @@ export default function Interview() {
                   {msg.text}
                 </div>
               </motion.div>
-            ))}
+              )
+            })}
 
             {/* Show recording indicator in chat */}
             {isRecording && (

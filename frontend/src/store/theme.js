@@ -3,18 +3,18 @@ import { persist } from 'zustand/middleware'
 
 export const useThemeStore = create(persist(
   (set, get) => ({
-    theme: 'light', // default light
+    theme: 'light', // Force light
     toggleTheme: () => {
-      const next = get().theme === 'light' ? 'dark' : 'light'
-      set({ theme: next })
-      applyTheme(next)
+      // Disabled: UI fully in light mode, no dark mode
+      set({ theme: 'light' })
+      applyTheme('light')
     },
-    initTheme: () => applyTheme(get().theme)
+    initTheme: () => applyTheme('light')
   }),
   { name: 'careerbridge-theme' }
 ))
 
 function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme)
-  document.documentElement.classList.toggle('dark', theme === 'dark')
+  document.documentElement.setAttribute('data-theme', 'light')
+  document.documentElement.classList.remove('dark')
 }

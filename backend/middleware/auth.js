@@ -19,4 +19,8 @@ const requireRole = (...roles) => (req, res, next) =>
     ? next()
     : res.status(403).json({ error: 'Insufficient permissions' });
 
-module.exports = { authenticate, requireRole };
+// Convenience middleware for recruiter-only routes (used by new features)
+const recruiterMiddleware = (req, res, next) =>
+  requireRole('recruiter')(req, res, next);
+
+module.exports = { authenticate, requireRole, recruiterMiddleware };

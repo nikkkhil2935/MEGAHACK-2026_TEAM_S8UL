@@ -2,21 +2,22 @@ const router = require('express').Router();
 const multer = require('multer');
 const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
-const { generateQuestions, evaluateAnswer, generateReport } = require('../services/groq/interviewEngine');
+const { generateQuestions, evaluateAnswer, generateReport, generatePanelQuestions, evaluatePanelAnswer, generatePanelReport } = require('../services/groq/interviewEngine');
 const { transcribeAudio } = require('../services/groq/client');
 const { groqJSON } = require('../services/groq/client');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25_000_000 } });
 
-// Start interview — generate questions (supports JD text/paste)
+// Start interview — generate questions (supports JD text/paste + panel mode)
 router.post('/start', authenticate, async (req, res) => {
-  const { job_id, interview_type = 'mixed', difficulty = 'mid', language = 'en', jd_text } = req.body;
+  const { job_id, interview_type = 'mixed', difficulty = 'mid', language = 'en', jd_text, panel_mode = false } = req.body;
 
-  const [{ data: profile }, jobResult] = await Promise.all([
+  const [{ data: profile }, jobResult, githubResult] = await Promise.all([
     supabase.from('candidate_profiles').select('parsed_data').eq('user_id', req.user.id).single(),
     job_id
       ? supabase.from('job_postings').select('*').eq('id', job_id).single()
-      : Promise.resolve({ data: null })
+      : Promise.resolve({ data: null }),
+    supabase.from('github_analyses').select('analysis').eq('user_id', req.user.id).maybeSingle?.() || Promise.resolve({ data: null })
   ]);
 
   if (!profile?.parsed_data) {
@@ -34,16 +35,29 @@ router.post('/start', authenticate, async (req, res) => {
     } catch { /* use empty jobData if parse fails */ }
   }
 
-  const questions = await generateQuestions({
+  const githubContext = githubResult.data?.analysis?.repositories
+    ?.slice(0, 3)
+    .map((r) => `- ${r.name}: ${r.improvedDescription}`)
+    .join('\n') || '';
+
+  const questionArgs = {
     candidateProfile: profile.parsed_data,
     jobData,
-    type: interview_type, difficulty, language
-  });
+    type: interview_type,
+    difficulty,
+    language,
+    githubContext
+  };
+
+  const questions = panel_mode
+    ? await generatePanelQuestions(questionArgs)
+    : await generateQuestions(questionArgs);
 
   const { data: session } = await supabase.from('interview_sessions').insert({
     candidate_id: req.user.id, job_id,
     interview_type, difficulty, language,
     questions, status: 'active',
+    panel_mode: !!panel_mode,
     started_at: new Date()
   }).select().single();
 
@@ -60,9 +74,9 @@ router.post('/answer', authenticate, async (req, res) => {
   if (!session) return res.status(404).json({ error: 'Session not found' });
 
   const question = session.questions[question_index];
-  const evaluation = await evaluateAnswer({
-    question, transcript, questionType: question.type, language: session.language
-  });
+  const evaluation = session.panel_mode && question.panelist
+    ? await evaluatePanelAnswer({ question, transcript, questionType: question.type, language: session.language })
+    : await evaluateAnswer({ question, transcript, questionType: question.type, language: session.language });
 
   const followup = evaluation.needs_followup && evaluation.overall_score < 7
     ? evaluation.followup_question
@@ -90,9 +104,9 @@ router.post('/answer/audio', authenticate, upload.single('audio'), async (req, r
     .select('*').eq('id', session_id).single();
 
   const question = session.questions[Number(question_index)];
-  const evaluation = await evaluateAnswer({
-    question, transcript, questionType: question.type, language: session.language
-  });
+  const evaluation = session.panel_mode && question.panelist
+    ? await evaluatePanelAnswer({ question, transcript, questionType: question.type, language: session.language })
+    : await evaluateAnswer({ question, transcript, questionType: question.type, language: session.language });
 
   const followup = evaluation.needs_followup && evaluation.overall_score < 7
     ? evaluation.followup_question
@@ -132,14 +146,18 @@ router.post('/end', authenticate, async (req, res) => {
   const { data: session } = await supabase.from('interview_sessions')
     .select('*, job_postings(title)').eq('id', session_id).single();
 
-  const report = await generateReport({
+  const reportArgs = {
     questions: session.questions,
     answers: session.answers || [],
     candidateName: req.user.full_name,
     jobTitle: session.job_postings?.title || session.interview_type,
     integrityEvents: session.integrity_events,
     language: session.language
-  });
+  };
+
+  const report = session.panel_mode
+    ? await generatePanelReport(reportArgs)
+    : await generateReport(reportArgs);
 
   const duration = Math.round((Date.now() - new Date(session.started_at)) / 1000);
 
@@ -165,11 +183,64 @@ router.get('/report/:id', authenticate, async (req, res) => {
 // History
 router.get('/history', authenticate, async (req, res) => {
   const { data } = await supabase.from('interview_sessions')
-    .select('id, interview_type, overall_score, integrity_score, status, started_at, ended_at, language, job_postings(title)')
+    .select('id, interview_type, overall_score, integrity_score, status, started_at, ended_at, language, panel_mode, job_postings(title)')
     .eq('candidate_id', req.user.id)
     .eq('status', 'completed')
     .order('created_at', { ascending: false });
   res.json(data);
+});
+
+// Analytics
+router.get('/analytics', authenticate, async (req, res) => {
+  try {
+    const { data: sessions } = await supabase.from('interview_sessions')
+      .select('id, overall_score, started_at, ended_at, interview_type, report, panel_mode')
+      .eq('candidate_id', req.user.id)
+      .eq('status', 'completed')
+      .order('started_at', { ascending: true });
+
+    // Build heatmap: { "2026-01-15": { count, avgScore } }
+    const heatmap = {};
+    const scoreTrend = [];
+    const skillMatrix = { technical: [], behavioral: [], communication: [], problem_solving: [], culture_fit: [] };
+
+    (sessions || []).forEach(s => {
+      const day = s.started_at ? s.started_at.split('T')[0] : null;
+      if (!day) return;
+
+      if (!heatmap[day]) heatmap[day] = { count: 0, totalScore: 0 };
+      heatmap[day].count++;
+      heatmap[day].totalScore += s.overall_score || 0;
+
+      scoreTrend.push({
+        date: day,
+        score: s.overall_score || 0,
+        type: s.interview_type,
+        id: s.id,
+        panel_mode: s.panel_mode || false,
+      });
+
+      const breakdown = s.report?.score_breakdown;
+      if (breakdown) {
+        Object.keys(skillMatrix).forEach(key => {
+          if (breakdown[key] !== undefined) {
+            skillMatrix[key].push({ date: day, score: breakdown[key], sessionId: s.id });
+          }
+        });
+      }
+    });
+
+    // Compute avgScore for heatmap
+    Object.values(heatmap).forEach(entry => {
+      entry.avgScore = Math.round(entry.totalScore / entry.count);
+      delete entry.totalScore;
+    });
+
+    res.json({ heatmap, scoreTrend, skillMatrix });
+  } catch (err) {
+    console.error('Analytics error:', err);
+    res.status(500).json({ error: 'Failed to generate analytics' });
+  }
 });
 
 module.exports = router;

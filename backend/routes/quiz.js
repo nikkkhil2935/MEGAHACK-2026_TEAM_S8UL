@@ -3,6 +3,39 @@ const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
 const { generateWeeklyQuiz, evaluateQuizAnswers } = require('../services/groq/quizGenerator');
 
+// Get user's roadmaps (for quiz landing) and past attempts
+router.get('/dashboard', authenticate, async (req, res) => {
+  try {
+    const { data: roadmaps } = await supabase.from('learning_roadmaps')
+      .select('id, skill_name, current_week, path_data, quiz_history')
+      .eq('candidate_id', req.user.id)
+      .order('updated_at', { ascending: false });
+
+    const { data: attempts } = await supabase.from('quiz_attempts')
+      .select('id, roadmap_id, week, skill, score, taken_at')
+      .eq('candidate_id', req.user.id)
+      .order('taken_at', { ascending: false })
+      .limit(20);
+
+    // Build roadmap summaries with available weeks
+    const roadmapSummaries = (roadmaps || []).map(r => {
+      const totalWeeks = r.path_data?.weeks?.length || 4;
+      return {
+        id: r.id,
+        skill_name: r.skill_name,
+        current_week: r.current_week,
+        total_weeks: totalWeeks,
+        quiz_history: r.quiz_history || [],
+      };
+    });
+
+    res.json({ roadmaps: roadmapSummaries, recent_attempts: attempts || [] });
+  } catch (err) {
+    console.error('Quiz dashboard error:', err.message);
+    res.status(500).json({ error: 'Failed to load quiz dashboard' });
+  }
+});
+
 // Generate a quiz for a roadmap week
 router.post('/generate', authenticate, async (req, res) => {
   try {

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import toast from 'react-hot-toast'
 
 // 7 XP Levels - from MessagingSchedulerGamified
 const XP_LEVELS = [
@@ -57,6 +58,19 @@ export const useGamificationStore = create(persist(
 
     // Award XP for actions
     awardXP: (amount, reason) => {
+      // Show gamified toast
+      toast.success(`✨ +${amount} XP: ${reason}`, {
+        duration: 3000, 
+        position: 'bottom-right',
+        style: {
+          background: '#ffffff',
+          color: '#16a34a',
+          fontWeight: 'bold',
+          border: '1px solid rgba(0,0,0,0.05)',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+        }
+      })
+
       set(state => {
         const newXP = state.xp + amount;
         const newTotal = state.totalXP + amount;

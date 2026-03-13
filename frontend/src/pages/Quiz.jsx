@@ -1,17 +1,124 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Trophy, ArrowLeft, Loader2, CheckCircle, XCircle, Clock, Star } from 'lucide-react'
+import { Trophy, ArrowLeft, Loader2, CheckCircle, XCircle, Clock, Star, Brain, Play, ChevronRight } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useGamificationStore } from '../store/gamification'
-import { showXPToast } from '../utils/xpNotifications'
 
-export default function Quiz() {
-  const [params] = useSearchParams()
+// Landing page shown when no roadmap param
+function QuizLanding() {
   const navigate = useNavigate()
-  const roadmapId = params.get('roadmap')
-  const week = parseInt(params.get('week') || '1')
+  const [loading, setLoading] = useState(true)
+  const [roadmaps, setRoadmaps] = useState([])
+  const [recentAttempts, setRecentAttempts] = useState([])
+
+  useEffect(() => {
+    async function loadDashboard() {
+      try {
+        const { data } = await api.get('/quiz/dashboard')
+        setRoadmaps(data.roadmaps || [])
+        setRecentAttempts(data.recent_attempts || [])
+      } catch {
+        toast.error('Failed to load quizzes')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadDashboard()
+  }, [])
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="animate-spin text-brand-400" size={32} />
+      <span className="ml-3 text-gray-400">Loading quizzes...</span>
+    </div>
+  )
+
+  if (roadmaps.length === 0) return (
+    <div className="max-w-3xl mx-auto px-4 py-12 text-center">
+      <Brain size={48} className="mx-auto mb-4 text-gray-500" />
+      <h1 className="text-2xl font-display font-bold text-foreground mb-3">No Quizzes Available</h1>
+      <p className="text-gray-400 mb-6">Create a learning roadmap first to unlock weekly quizzes.</p>
+      <button onClick={() => navigate('/roadmap')}
+        className="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-sm font-medium transition-colors cursor-pointer">
+        Create a Roadmap
+      </button>
+    </div>
+  )
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <h1 className="text-2xl font-display font-bold text-foreground mb-2">Quizzes</h1>
+      <p className="text-gray-400 text-sm mb-8">Test your knowledge with AI-generated quizzes from your learning roadmaps.</p>
+
+      {/* Roadmaps with quiz options */}
+      <div className="space-y-4 mb-10">
+        {roadmaps.map(r => {
+          const completedWeeks = r.quiz_history.map(h => h.week)
+          return (
+            <div key={r.id} className="bg-surface-800 border border-white/5 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground">{r.skill_name}</h2>
+                <span className="text-xs text-gray-500">Week {r.current_week} / {r.total_weeks}</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {Array.from({ length: r.total_weeks }, (_, i) => i + 1).map(week => {
+                  const attempt = r.quiz_history.find(h => h.week === week)
+                  const hasScore = attempt && typeof attempt.score === 'number'
+                  return (
+                    <button key={week}
+                      onClick={() => navigate(`/quiz?roadmap=${r.id}&week=${week}`)}
+                      className="flex items-center justify-between px-4 py-3 rounded-lg text-sm transition-colors cursor-pointer bg-surface-700/50 border border-white/5 hover:bg-surface-700 hover:border-brand-500/30">
+                      <div className="flex items-center gap-2">
+                        {hasScore ? (
+                          <CheckCircle size={14} className={attempt.score >= 70 ? 'text-green-400' : 'text-yellow-400'} />
+                        ) : (
+                          <Play size={14} className="text-gray-400" />
+                        )}
+                        <span className="text-foreground">Week {week}</span>
+                      </div>
+                      {hasScore ? (
+                        <span className={`text-xs font-medium ${attempt.score >= 70 ? 'text-green-400' : 'text-yellow-400'}`}>{attempt.score}%</span>
+                      ) : (
+                        <ChevronRight size={14} className="text-gray-500" />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Recent attempts */}
+      {recentAttempts.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Recent Attempts</h2>
+          <div className="space-y-2">
+            {recentAttempts.map(a => (
+              <div key={a.id} className="flex items-center justify-between bg-surface-800 border border-white/5 rounded-xl px-5 py-3">
+                <div>
+                  <span className="text-sm text-foreground font-medium">{a.skill}</span>
+                  <span className="text-xs text-gray-500 ml-2">Week {a.week}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-semibold ${a.score >= 70 ? 'text-green-400' : 'text-yellow-400'}`}>{a.score}%</span>
+                  <span className="text-xs text-gray-500">{new Date(a.taken_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Active quiz component
+function ActiveQuiz({ roadmapId, week }) {
+  const navigate = useNavigate()
   const recordQuiz = useGamificationStore(s => s.recordQuiz)
 
   const [questions, setQuestions] = useState([])
@@ -23,7 +130,6 @@ export default function Quiz() {
   const [result, setResult] = useState(null)
 
   useEffect(() => {
-    if (!roadmapId) { navigate('/roadmap'); return }
     generateQuiz()
   }, [roadmapId, week])
 
@@ -32,7 +138,7 @@ export default function Quiz() {
       const { data } = await api.post('/quiz/generate', { roadmap_id: roadmapId, week })
       setQuestions(data.questions || [])
       setSkill(data.skill)
-    } catch { toast.error('Failed to generate quiz'); navigate(`/roadmap/${roadmapId}`) }
+    } catch { toast.error('Failed to generate quiz'); navigate('/quiz') }
     finally { setLoading(false) }
   }
 
@@ -55,7 +161,6 @@ export default function Quiz() {
       // Award XP and record quiz completion
       const score = data.score_percent || 0;
       recordQuiz(score);
-      showXPToast(Math.round(score * 1.5), `Quiz Complete (${score}%)`);
     } catch { toast.error('Failed to submit quiz') }
     finally { setSubmitting(false) }
   }
@@ -71,9 +176,9 @@ export default function Quiz() {
   if (result) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <button onClick={() => navigate(`/roadmap/${roadmapId}`)}
+        <button onClick={() => navigate('/quiz')}
           className="flex items-center gap-1 text-sm text-gray-400 hover:text-foreground mb-6 cursor-pointer">
-          <ArrowLeft size={16} /> Back to Roadmap
+          <ArrowLeft size={16} /> Back to Quizzes
         </button>
 
         <div className="bg-surface-800 border border-white/5 rounded-xl p-8 text-center mb-6">
@@ -141,9 +246,9 @@ export default function Quiz() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <button onClick={() => navigate(`/roadmap/${roadmapId}`)}
+      <button onClick={() => navigate('/quiz')}
         className="flex items-center gap-1 text-sm text-gray-400 hover:text-foreground mb-6 cursor-pointer">
-        <ArrowLeft size={16} /> Back to Roadmap
+        <ArrowLeft size={16} /> Back to Quizzes
       </button>
 
       <div className="flex items-center justify-between mb-6">
@@ -216,4 +321,16 @@ export default function Quiz() {
       </div>
     </div>
   )
+}
+
+export default function Quiz() {
+  const [params] = useSearchParams()
+  const roadmapId = params.get('roadmap')
+  const week = parseInt(params.get('week') || '1')
+
+  // If no roadmap param, show the quiz landing/dashboard
+  if (!roadmapId) return <QuizLanding />
+
+  // Otherwise, show the active quiz
+  return <ActiveQuiz roadmapId={roadmapId} week={week} />
 }

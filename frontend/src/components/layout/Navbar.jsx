@@ -1,13 +1,37 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
 import { useThemeStore } from '../../store/theme'
-import { LayoutDashboard, Briefcase, Mic, User, LogOut, History, Map, MessageCircle, Building2, PlusCircle, BarChart3, Menu, X, Sun, Moon, MessageSquare, Phone } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Briefcase,
+  Mic,
+  User,
+  LogOut,
+  History,
+  Map,
+  MessageCircle,
+  Building2,
+  PlusCircle,
+  BarChart3,
+  Menu,
+  X,
+  Sun,
+  Moon,
+  MessageSquare,
+  Phone,
+  DollarSign,
+  FileText,
+  Github,
+  Bot,
+  Brain
+} from 'lucide-react'
 
 export default function Navbar() {
   const { user, logout } = useAuthStore()
   const { theme, toggleTheme } = useThemeStore()
   const navigate = useNavigate()
+  const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleLogout = () => {
@@ -19,95 +43,108 @@ export default function Navbar() {
 
   const candidateLinks = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/jobs', icon: Briefcase, label: 'Jobs' },
-    { to: '/interview', icon: Mic, label: 'Interview' },
-    { to: '/interview/history', icon: History, label: 'History' },
-    { to: '/roadmap', icon: Map, label: 'Roadmap' },
-    { to: '/tutor', icon: MessageCircle, label: 'Tutor' },
-    { to: '/messaging', icon: MessageSquare, label: 'Messages' },
     { to: '/profile', icon: User, label: 'Profile' },
+    { to: '/jobs', icon: Briefcase, label: 'Workspace' },
+    { to: '/interview', icon: Mic, label: 'Interviews' },
+    { to: '/interview/history', icon: History, label: 'History & Analytics' },
+    { to: '/tutor', icon: Bot, label: 'AI Tutor' },
+    { to: '/quiz', icon: Brain, label: 'Quizzes' },
+    { to: '/resume-improver', icon: FileText, label: 'Resume AI' },
+    { to: '/github', icon: Github, label: 'GitHub AI' },
+    { to: '/roadmap', icon: Map, label: 'Roadmap' },
+    { to: '/salary', icon: DollarSign, label: 'Salary' },
+    { to: '/messaging', icon: MessageSquare, label: 'Messages' },
   ]
 
   const recruiterLinks = [
     { to: '/recruiter', icon: Building2, label: 'Dashboard' },
+    { to: '/profile', icon: User, label: 'Profile' },
     { to: '/recruiter/post-job', icon: PlusCircle, label: 'Post Job' },
     { to: '/recruiter/analytics', icon: BarChart3, label: 'Analytics' },
     { to: '/ai-calling', icon: Phone, label: 'AI Calls' },
     { to: '/messaging', icon: MessageSquare, label: 'Messages' },
     { to: '/jobs', icon: Briefcase, label: 'Browse Jobs' },
-    { to: '/profile', icon: User, label: 'Profile' },
   ]
 
   const links = isRecruiter ? recruiterLinks : candidateLinks
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-black/5 dark:border-white/5 bg-surface-900/80 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
+    <>
+      {/* Mobile Header */}
+      <div className="md:hidden flex items-center justify-between p-4 bg-surface-900 border-b border-black/5 dark:border-white/5 h-16 w-full shrink-0 z-50">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-brand-500 flex items-center justify-center text-white text-xs font-bold">CB</div>
-          <span className="font-display font-semibold text-foreground text-sm hidden sm:block">CareerBridge AI</span>
+          <div className="w-8 h-8 rounded-xl bg-brand-500 flex items-center justify-center text-white text-xs font-bold shadow-lg">CB</div>
+          <span className="font-display font-semibold text-foreground">CareerBridge</span>
         </Link>
-
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-1">
-          {links.map(({ to, icon: Icon, label }) => (
-            <Link key={to} to={to}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-foreground-muted hover:text-foreground hover:bg-surface-700 transition-colors">
-              <Icon size={15} />
-              <span>{label}</span>
-            </Link>
-          ))}
-
-          <div className="w-px h-6 bg-black/10 dark:bg-white/10 mx-2" />
-
-          <span className="text-xs text-foreground-muted mr-2">
-            {user?.full_name || user?.email}
-          </span>
-
-          <button onClick={toggleTheme}
-            className="p-2 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-700 transition-colors cursor-pointer"
-            aria-label="Toggle theme">
-            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
-
-          <button onClick={handleLogout}
-            className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer">
-            <LogOut size={15} />
-          </button>
-        </div>
-
-        {/* Mobile hamburger */}
         <button onClick={() => setMobileOpen(o => !o)}
-          className="md:hidden p-2 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-700 transition-colors cursor-pointer">
+          className="p-2 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-700 transition-colors cursor-pointer">
           {mobileOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
 
-      {/* Mobile dropdown */}
-      <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-        <div className="px-4 py-3 space-y-1 border-t border-black/5 dark:border-white/5 bg-surface-900/95 backdrop-blur-md">
-          {links.map(({ to, icon: Icon, label }) => (
-            <Link key={to} to={to} onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground-muted hover:text-foreground hover:bg-surface-700 transition-colors">
-              <Icon size={16} />
-              {label}
-            </Link>
-          ))}
-          <div className="h-px bg-black/5 dark:bg-white/5 my-2" />
-          <div className="flex items-center justify-between px-3 py-2">
-            <span className="text-xs text-foreground-muted">{user?.full_name || user?.email}</span>
+      {/* Sidebar */}
+      <aside className={`fixed md:static inset-y-0 left-0 z-40 w-64 bg-surface-900 border-r border-black/5 dark:border-white/5 transform transition-transform duration-300 ease-in-out flex flex-col h-full ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        <div className="p-6">
+          <Link to="/dashboard" className="flex items-center gap-3 mb-8">
+            <div className="w-8 h-8 rounded-xl bg-brand-500 flex items-center justify-center text-[#c1ff72] text-xs font-bold shadow-lg">CB</div>
+            <span className="font-display font-semibold text-foreground text-xl">CareerBridge</span>
+          </Link>
+
+          {/* User Profile Info (like reference) */}
+          <Link to="/profile" className="flex flex-col items-center justify-center mb-8 group cursor-pointer">
+            <div className="w-20 h-20 rounded-full bg-surface-700 border-2 border-surface-600 mb-3 overflow-hidden group-hover:border-brand-500/50 transition-colors">
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-gray-400">
+                  {user?.full_name?.charAt(0) || 'U'}
+                </div>
+              )}
+            </div>
+            <h2 className="text-foreground font-display font-bold text-lg">{user?.full_name || 'User'}</h2>
+            <p className="text-gray-500 text-xs mt-1 capitalize">{user?.role || 'Candidate'}</p>
+          </Link>
+        </div>
+
+        {/* Navigation Links */}
+        <div className="flex-1 px-4 overflow-y-auto space-y-1">
+          {links.map(({ to, icon: Icon, label }) => {
+            const isActive = location.pathname === to || (location.pathname.startsWith(to + '/') && to !== '/interview')
+            return (
+              <Link key={to} to={to} onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all ${
+                  isActive 
+                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-md' 
+                    : 'text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-surface-800'
+                }`}>
+                <Icon size={20} className={isActive ? 'text-black' : ''} />
+                <span>{label}</span>
+              </Link>
+            )
+          })}
+        </div>
+        
+        {/* Bottom Actions */}
+        <div className="p-6 mt-auto">
+          <div className="flex items-center justify-between">
             <button onClick={toggleTheme}
-              className="p-2 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-700 transition-colors cursor-pointer"
+              className="p-3 rounded-xl bg-surface-100 dark:bg-surface-800 text-foreground-muted hover:text-foreground hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors cursor-pointer shadow-sm border border-gray-100 dark:border-white/5"
               aria-label="Toggle theme">
-              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <button onClick={handleLogout}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer">
-              <LogOut size={14} /> Logout
+              className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 font-medium hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors cursor-pointer shadow-sm border border-red-100 dark:border-red-500/10"
+              aria-label="Logout">
+              <LogOut size={18} />
             </button>
           </div>
         </div>
-      </div>
-    </nav>
+      </aside>
+      
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setMobileOpen(false)} />
+      )}
+    </>
   )
 }

@@ -1,9 +1,31 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2, Users, Star, Mail, Download, ChevronDown, ChevronUp, Sparkles, Shield, AlertTriangle, Calendar } from 'lucide-react'
+import {
+  ArrowLeft,
+  Loader2,
+  Users,
+  Star,
+  Mail,
+  Download,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  Shield,
+  AlertTriangle,
+  Calendar,
+  Trophy,
+  AlertTriangle as AlertTriangleIcon
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import {
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  ResponsiveContainer
+} from 'recharts'
 
 export default function ViewJobApplications() {
   const { id } = useParams()
@@ -14,6 +36,9 @@ export default function ViewJobApplications() {
   const [expanded, setExpanded] = useState(null)
   const [shortlist, setShortlist] = useState(null)
   const [shortlisting, setShortlisting] = useState(false)
+  const [ranking, setRanking] = useState(null)
+  const [rankLoading, setRankLoading] = useState(false)
+  const [selectedCandidate, setSelectedCandidate] = useState(null)
 
   useEffect(() => { fetchData() }, [id])
 
@@ -25,9 +50,26 @@ export default function ViewJobApplications() {
       ])
       if (jobRes?.data) setJob(jobRes.data)
       if (appRes?.data) setApplicants(appRes.data)
+      // load existing ranking if present
+      api.get(`/ranking/job/${id}`)
+        .then(({ data }) => { if (data.ranking) setRanking(data.ranking) })
+        .catch(() => {})
     } catch {
       toast.error('Failed to load applications')
     } finally { setLoading(false) }
+  }
+
+  async function runRanking() {
+    setRankLoading(true)
+    try {
+      const { data } = await api.post(`/ranking/job/${id}`)
+      setRanking(data.ranking)
+      toast.success(`Ranked ${data.totalCandidates} candidates!`)
+    } catch {
+      toast.error('Ranking failed')
+    } finally {
+      setRankLoading(false)
+    }
   }
 
   async function generateShortlist() {
@@ -44,6 +86,124 @@ export default function ViewJobApplications() {
     if (score >= 80) return 'text-green-400'
     if (score >= 60) return 'text-yellow-400'
     return 'text-red-400'
+  }
+
+  function RankedCandidateCard({ candidate, onClick, isSelected }) {
+    const medal = { 1: '🥇', 2: '🥈', 3: '🥉' }[candidate.rank] || `#${candidate.rank}`
+    return (
+      <div
+        className={`glass-card p-4 cursor-pointer transition-all border-2 
+        ${isSelected ? 'border-foreground' : 'border-transparent'}`}
+        onClick={() => onClick(candidate)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{medal}</span>
+            <div>
+              <p className="font-semibold text-foreground">{candidate.name}</p>
+              <p className="text-xs text-foreground/60">
+                Composite Score: {candidate.compositeScore}/100
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {candidate.shortlist && (
+              <span className="text-xs px-2 py-1 bg-foreground text-surface-900 rounded-full font-semibold">
+                ⭐ Shortlisted
+              </span>
+            )}
+            <span className="text-lg font-bold text-foreground">{candidate.compositeScore}</span>
+          </div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {Object.entries(candidate.dimensions || {}).map(([key, val]) => (
+            <div key={key}>
+              <p className="text-xs text-foreground/50 truncate capitalize">
+                {key.replace(/([A-Z])/g, ' $1').trim()}
+              </p>
+              <div className="h-1.5 bg-surface-700 rounded-full mt-0.5">
+                <div
+                  className="h-1.5 bg-foreground rounded-full"
+                  style={{ width: `${Math.min(100, val)}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {candidate.redFlags?.length > 0 && (
+          <div className="mt-2 flex items-center gap-1 text-yellow-500 text-xs">
+            <AlertTriangleIcon className="w-3 h-3" />
+            {candidate.redFlags[0]}
+            {candidate.redFlags.length > 1 && ` +${candidate.redFlags.length - 1} more`}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  function CandidateDetailPanel({ candidate, onClose }) {
+    if (!candidate) return null
+    const radarData = Object.entries(candidate.dimensions || {}).map(([key, val]) => ({
+      subject: key.replace(/([A-Z])/g, ' $1').trim(),
+      value: val
+    }))
+
+    return (
+      <div className="glass-card p-6 space-y-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-xl font-bold text-foreground">
+              #{candidate.rank} — {candidate.name}
+            </h3>
+            <p className="text-foreground/60 text-sm">
+              Composite Score: {candidate.compositeScore}/100
+            </p>
+          </div>
+          <button onClick={onClose} className="btn-ghost px-3 py-1 text-sm">✕ Close</button>
+        </div>
+
+        <ResponsiveContainer width="100%" height={260}>
+          <RadarChart data={radarData}>
+            <PolarGrid />
+            <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11 }} />
+            <Radar
+              dataKey="value"
+              fill="var(--color-foreground)"
+              fillOpacity={0.25}
+              stroke="var(--color-foreground)"
+            />
+          </RadarChart>
+        </ResponsiveContainer>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-2">✅ Strengths</p>
+            <ul className="space-y-1">
+              {(candidate.strengths || []).map((s, i) => (
+                <li key={i} className="text-xs text-foreground/70">• {s}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-2">⚠️ Red Flags</p>
+            <ul className="space-y-1">
+              {candidate.redFlags?.length
+                ? candidate.redFlags.map((f, i) => (
+                  <li key={i} className="text-xs text-yellow-500">• {f}</li>
+                ))
+                : <li className="text-xs text-foreground/50">None identified</li>}
+            </ul>
+          </div>
+        </div>
+
+        <div className="p-3 border border-foreground/20 rounded-lg">
+          <p className="text-xs font-semibold text-foreground mb-1">🤖 AI Hiring Recommendation</p>
+          <p className="text-sm text-foreground/70">{candidate.hiringRecommendation}</p>
+        </div>
+      </div>
+    )
   }
 
   if (loading) return (
@@ -69,6 +229,46 @@ export default function ViewJobApplications() {
       <div className="flex items-center gap-2 mb-4">
         <Users size={18} className="text-brand-400" />
         <span className="text-sm text-gray-400">{applicants.length} applicant{applicants.length !== 1 ? 's' : ''}</span>
+      </div>
+
+      {/* AI Ranking */}
+      <div className="mb-6 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Trophy size={16} className="text-amber-400" />
+            <span className="text-sm text-foreground font-medium">AI Candidate Ranking</span>
+          </div>
+          <button
+            onClick={runRanking}
+            disabled={rankLoading || applicants.length === 0}
+            className="flex items-center gap-2 px-4 py-1.5 bg-surface-700 hover:bg-surface-600 text-foreground rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            {rankLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            {rankLoading ? 'Ranking candidates...' : 'Run AI Ranking'}
+          </button>
+        </div>
+
+        {ranking && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {ranking.map(c => (
+              <RankedCandidateCard
+                key={c.applicationId}
+                candidate={c}
+                isSelected={selectedCandidate?.applicationId === c.applicationId}
+                onClick={setSelectedCandidate}
+              />
+            ))}
+          </div>
+        )}
+
+        {selectedCandidate && (
+          <div className="mt-4">
+            <CandidateDetailPanel
+              candidate={selectedCandidate}
+              onClose={() => setSelectedCandidate(null)}
+            />
+          </div>
+        )}
       </div>
 
       {/* AI Shortlist */}
