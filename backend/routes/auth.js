@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
-const { createOrGetUserProfile, extractDisplayName, generateAuthToken } = require('../services/authService');
+const { createOrGetUserProfile, extractDisplayName, generateAuthToken, getUserProfile } = require('../services/authService');
 const { ROLES } = require('../constants');
 
 router.post('/register', async (req, res) => {
@@ -21,10 +21,12 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return res.status(401).json({ error: 'Invalid credentials' });
+  if (error) {
+    console.error('Login error:', error.message);
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
 
-  const { data: profile } = await supabase
-    .from('profiles').select('*').eq('id', data.user.id).single();
+  const profile = await getUserProfile(data.user.id);
   const token = generateAuthToken(data.user.id);
   res.json({ token, user: profile });
 });
@@ -37,7 +39,10 @@ router.post('/oauth-callback', async (req, res) => {
     if (!access_token) return res.status(400).json({ error: 'Missing access_token' });
 
     const { data: { user: authUser }, error } = await supabase.auth.getUser(access_token);
-    if (error || !authUser) return res.status(401).json({ error: 'Invalid OAuth token' });
+    if (error || !authUser) {
+      console.error('OAuth validation error:', error?.message);
+      return res.status(401).json({ error: 'Invalid OAuth token' });
+    }
 
     const full_name = extractDisplayName(authUser);
     const email = authUser.email;
@@ -47,7 +52,8 @@ router.post('/oauth-callback', async (req, res) => {
     const token = generateAuthToken(authUser.id);
     res.json({ token, user: profile });
   } catch (err) {
-    res.status(500).json({ error: 'OAuth callback failed' });
+    console.error('OAuth callback error:', err.message);
+    res.status(500).json({ error: 'Authentication failed', code: 'OAUTH_CALLBACK_ERROR' });
   }
 });
 

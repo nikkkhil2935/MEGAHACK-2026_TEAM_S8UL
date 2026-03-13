@@ -5,9 +5,10 @@ import { Mail, Lock, User, Building2, UserPlus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/auth'
 import FormLabel from '../components/auth/FormLabel'
+import { ROLES, getHomeRoute } from '../constants'
 
 export default function Register() {
-  const [form, setForm] = useState({ full_name: '', email: '', password: '', role: 'candidate', company_name: '' })
+  const [form, setForm] = useState({ full_name: '', email: '', password: '', role: ROLES.CANDIDATE, company_name: '' })
   const [loading, setLoading] = useState(false)
   const { register } = useAuthStore()
   const navigate = useNavigate()
@@ -20,7 +21,7 @@ export default function Register() {
     try {
       const user = await register(form)
       toast.success('Account created!')
-      navigate(user?.role === 'recruiter' ? '/recruiter' : '/dashboard')
+      navigate(getHomeRoute(user?.role))
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed')
     } finally {
@@ -46,14 +47,14 @@ export default function Register() {
           <div>
             <FormLabel spacing="mb-2">I am a</FormLabel>
             <div className="grid grid-cols-2 gap-2">
-              {['candidate', 'recruiter'].map(role => (
+              {Object.values(ROLES).map(role => (
                 <button key={role} type="button" onClick={() => setForm(f => ({ ...f, role }))}
                   className={`py-2.5 px-4 rounded-xl text-sm font-medium capitalize border transition-all cursor-pointer ${
                     form.role === role
                       ? 'bg-brand-500/20 border-brand-500/50 text-brand-300'
                       : 'bg-surface-700 border-white/5 text-gray-400 hover:border-white/20'
                   }`}>
-                  {role === 'candidate' ? 'Job Seeker' : 'Recruiter'}
+                  {role === ROLES.CANDIDATE ? 'Job Seeker' : 'Recruiter'}
                 </button>
               ))}
             </div>
@@ -86,7 +87,7 @@ export default function Register() {
             </div>
           </div>
 
-          {form.role === 'recruiter' && (
+          {form.role === ROLES.RECRUITER && (
             <div>
               <FormLabel>Company Name</FormLabel>
               <div className="relative">

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { useAuthStore } from '../store/auth'
+import { getHomeRoute } from '../constants'
 import toast from 'react-hot-toast'
 
 export default function AuthCallback() {
@@ -10,16 +11,22 @@ export default function AuthCallback() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    let mounted = true
+
     handleOAuthCallback()
       .then(user => {
+        if (!mounted) return
         toast.success('Welcome!')
-        navigate(user?.role === 'recruiter' ? '/recruiter' : '/dashboard')
+        navigate(getHomeRoute(user?.role))
       })
       .catch(err => {
+        if (!mounted) return
         setError(err.message || 'Authentication failed')
         toast.error('Google sign-in failed')
         setTimeout(() => navigate('/login'), 2000)
       })
+
+    return () => { mounted = false }
   }, [])
 
   return (

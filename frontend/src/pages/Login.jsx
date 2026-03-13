@@ -4,6 +4,7 @@ import { Mail, Lock, LogIn } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/auth'
 import FormLabel from '../components/auth/FormLabel'
+import { getHomeRoute } from '../constants'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -19,7 +20,7 @@ export default function Login() {
     try {
       const user = await login(email, password)
       toast.success('Welcome back!')
-      navigate(user?.role === 'recruiter' ? '/recruiter' : '/dashboard')
+      navigate(getHomeRoute(user?.role))
     } catch (err) {
       toast.error(err.response?.data?.error || 'Login failed')
     } finally {

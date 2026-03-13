@@ -1,4 +1,5 @@
 const supabase = require('../../db/supabase');
+const jwt = require('jsonwebtoken');
 const { ROLES } = require('../../constants');
 
 /**
@@ -47,12 +48,26 @@ function extractDisplayName(authUser) {
  * Generate JWT token for authenticated session
  */
 function generateAuthToken(userId) {
-  const jwt = require('jsonwebtoken');
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+}
+
+/**
+ * Get user profile by ID (optimized query - only selects needed columns)
+ */
+async function getUserProfile(userId) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id,email,full_name,role,created_at')
+    .eq('id', userId)
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
 module.exports = {
   createOrGetUserProfile,
   extractDisplayName,
-  generateAuthToken
+  generateAuthToken,
+  getUserProfile
 };
