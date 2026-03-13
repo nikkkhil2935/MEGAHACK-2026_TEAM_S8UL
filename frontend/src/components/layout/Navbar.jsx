@@ -2,7 +2,28 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
 import { useThemeStore } from '../../store/theme'
-import { LayoutDashboard, Briefcase, Mic, User, LogOut, History, Map, MessageCircle, Building2, PlusCircle, BarChart3, Menu, X, Sun, Moon, MessageSquare, Phone } from 'lucide-react'
+import {
+  LayoutDashboard,
+  Briefcase,
+  Mic,
+  User,
+  LogOut,
+  History,
+  Map,
+  MessageCircle,
+  Building2,
+  PlusCircle,
+  BarChart3,
+  Menu,
+  X,
+  Sun,
+  Moon,
+  MessageSquare,
+  Phone,
+  DollarSign,
+  FileText,
+  Github
+} from 'lucide-react'
 
 export default function Navbar() {
   const { user, logout } = useAuthStore()
@@ -23,6 +44,9 @@ export default function Navbar() {
     { to: '/interview', icon: Mic, label: 'Interview' },
     { to: '/interview/history', icon: History, label: 'History' },
     { to: '/roadmap', icon: Map, label: 'Roadmap' },
+    { to: '/salary', icon: DollarSign, label: 'Salary Predictor' },
+    { to: '/resume-improver', icon: FileText, label: 'Resume AI' },
+    { to: '/github', icon: Github, label: 'GitHub Analyzer' },
     { to: '/tutor', icon: MessageCircle, label: 'Tutor' },
     { to: '/messaging', icon: MessageSquare, label: 'Messages' },
     { to: '/profile', icon: User, label: 'Profile' },

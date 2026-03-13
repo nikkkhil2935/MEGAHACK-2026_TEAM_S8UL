@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Mic, Briefcase, User, TrendingUp, Award, Target, BookOpen, GraduationCap, Flame } from 'lucide-react'
@@ -24,7 +24,14 @@ function StatCard({ icon: Icon, label, value, color = 'text-brand-400' }) {
 
 export default function Dashboard() {
   const { user } = useAuthStore()
-  const gamStats = useGamificationStore(s => s.getStats())
+  const xp = useGamificationStore(s => s.xp)
+  const totalXP = useGamificationStore(s => s.totalXP)
+  const badges = useGamificationStore(s => s.badges)
+  const streakDays = useGamificationStore(s => s.streakDays)
+  const interviewsCompleted = useGamificationStore(s => s.interviewsCompleted)
+  const quizzesCompleted = useGamificationStore(s => s.quizzesCompleted)
+  const roadmapsStarted = useGamificationStore(s => s.roadmapsStarted)
+  const gamStats = useMemo(() => useGamificationStore.getState().getStats(), [xp, totalXP, badges, streakDays, interviewsCompleted, quizzesCompleted, roadmapsStarted])
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
 

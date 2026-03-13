@@ -31,10 +31,14 @@ app.use('/api/linkedin', require('./routes/linkedin'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/interview', require('./routes/interview'));
 app.use('/api/dashboard', require('./routes/dashboard'));
-app.use('/api/tutor',     require('./routes/tutor'));
-app.use('/api/roadmap',   require('./routes/roadmap'));
-app.use('/api/quiz',      require('./routes/quiz'));
-app.use('/api/tts',       require('./routes/tts'));
+app.use('/api/tutor', require('./routes/tutor'));
+app.use('/api/roadmap', require('./routes/roadmap'));
+app.use('/api/quiz', require('./routes/quiz'));
+app.use('/api/tts', require('./routes/tts'));
+app.use('/api/salary', require('./routes/salary'));
+app.use('/api/ranking', require('./routes/ranking'));
+app.use('/api/resume-improver', require('./routes/resumeImprover'));
+app.use('/api/github', require('./routes/github'));
 
 // Socket.io: Real-time interview events
 io.on('connection', (socket) => {

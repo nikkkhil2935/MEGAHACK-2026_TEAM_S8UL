@@ -25,6 +25,9 @@ import RecruiterAnalytics from './pages/RecruiterAnalytics'
 import MessagingSchedulerGamified from './pages/MessagingSchedulerGamified'
 import AICallingSystem from './pages/AICallingSystem'
 import AuthCallback from './pages/AuthCallback'
+import SalaryPredictor from './pages/SalaryPredictor'
+import ResumeImprover from './pages/ResumeImprover'
+import GitHubAnalyzer from './pages/GitHubAnalyzer'
 
 function PrivateRoute({ children }) {
   const { token } = useAuthStore()
@@ -69,6 +72,9 @@ export default function App() {
         <Route path="/roadmap/:id" element={<PrivateRoute><RoadmapDetail /></PrivateRoute>} />
         <Route path="/quiz" element={<PrivateRoute><Quiz /></PrivateRoute>} />
         <Route path="/tutor" element={<PrivateRoute><Tutor /></PrivateRoute>} />
+        <Route path="/salary" element={<PrivateRoute><SalaryPredictor /></PrivateRoute>} />
+        <Route path="/resume-improver" element={<PrivateRoute><ResumeImprover /></PrivateRoute>} />
+        <Route path="/github" element={<PrivateRoute><GitHubAnalyzer /></PrivateRoute>} />
         <Route path="/recruiter" element={<PrivateRoute><RecruiterDashboard /></PrivateRoute>} />
         <Route path="/recruiter/post-job" element={<PrivateRoute><PostJob /></PrivateRoute>} />
         <Route path="/recruiter/analytics" element={<PrivateRoute><RecruiterAnalytics /></PrivateRoute>} />

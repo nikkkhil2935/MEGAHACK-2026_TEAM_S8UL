@@ -10,9 +10,13 @@ function getLanguageName(code) {
   return map[code] || 'English';
 }
 
-async function generateQuestions({ candidateProfile, jobData, type, difficulty, language = 'en' }) {
+async function generateQuestions({ candidateProfile, jobData, type, difficulty, language = 'en', githubContext = '' }) {
   const langInstruction = language !== 'en'
     ? `Generate ALL questions in ${getLanguageName(language)}. The questions should feel natural in that language.`
+    : '';
+
+  const githubSection = githubContext
+    ? `\nGITHUB PROJECTS (ask about these specifically):\n${githubContext}\n`
     : '';
 
   return groqJSON(
@@ -24,7 +28,7 @@ Generate exactly 10 interview questions.
 Mix: ${type === 'technical' ? '7 technical, 2 behavioral, 1 system design' : type === 'behavioral' ? '2 technical, 6 behavioral, 2 situational' : type === 'hr' ? '1 technical, 3 behavioral, 4 HR/culture, 2 motivation' : '4 technical, 3 behavioral, 2 situational, 1 motivation'}.
 Difficulty: ${difficulty} level.
 ${langInstruction}
-The candidate should feel like you actually READ their profile and know their work.`,
+The candidate should feel like you actually READ their profile and know their work.${githubSection}`,
 
     `CANDIDATE PROFILE:
 - Name: ${candidateProfile.name || 'Candidate'}

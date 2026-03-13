@@ -12,11 +12,12 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25_
 router.post('/start', authenticate, async (req, res) => {
   const { job_id, interview_type = 'mixed', difficulty = 'mid', language = 'en', jd_text } = req.body;
 
-  const [{ data: profile }, jobResult] = await Promise.all([
+  const [{ data: profile }, jobResult, githubResult] = await Promise.all([
     supabase.from('candidate_profiles').select('parsed_data').eq('user_id', req.user.id).single(),
     job_id
       ? supabase.from('job_postings').select('*').eq('id', job_id).single()
-      : Promise.resolve({ data: null })
+      : Promise.resolve({ data: null }),
+    supabase.from('github_analyses').select('analysis').eq('user_id', req.user.id).maybeSingle?.() || Promise.resolve({ data: null })
   ]);
 
   if (!profile?.parsed_data) {
@@ -34,10 +35,18 @@ router.post('/start', authenticate, async (req, res) => {
     } catch { /* use empty jobData if parse fails */ }
   }
 
+  const githubContext = githubResult.data?.analysis?.repositories
+    ?.slice(0, 3)
+    .map((r) => `- ${r.name}: ${r.improvedDescription}`)
+    .join('\n') || '';
+
   const questions = await generateQuestions({
     candidateProfile: profile.parsed_data,
     jobData,
-    type: interview_type, difficulty, language
+    type: interview_type,
+    difficulty,
+    language,
+    githubContext
   });
 
   const { data: session } = await supabase.from('interview_sessions').insert({
