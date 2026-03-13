@@ -24,6 +24,7 @@ import ViewJobApplications from './pages/ViewJobApplications'
 import RecruiterAnalytics from './pages/RecruiterAnalytics'
 import MessagingSchedulerGamified from './pages/MessagingSchedulerGamified'
 import AICallingSystem from './pages/AICallingSystem'
+import AuthCallback from './pages/AuthCallback'
 
 function PrivateRoute({ children }) {
   const { token } = useAuthStore()
@@ -55,6 +56,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={token ? <RootRedirect /> : <Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />

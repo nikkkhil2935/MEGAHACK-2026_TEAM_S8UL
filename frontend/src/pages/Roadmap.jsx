@@ -14,6 +14,7 @@ export default function Roadmap() {
   const [level, setLevel] = useState('beginner')
   const [targetLevel, setTargetLevel] = useState('intermediate')
   const [weeklyHours, setWeeklyHours] = useState(10)
+  const [weeks, setWeeks] = useState(4)
   const [showForm, setShowForm] = useState(false)
 
   useEffect(() => { fetchRoadmaps() }, [])
@@ -40,7 +41,7 @@ export default function Roadmap() {
     setGenerating(true)
     try {
       const { data } = await api.post('/roadmap/generate', {
-        skill: skill.trim(), candidate_level: level, target_level: targetLevel, weekly_hours: weeklyHours
+        skill: skill.trim(), candidate_level: level, target_level: targetLevel, weekly_hours: weeklyHours, weeks
       })
       toast.success(data.cached ? 'Roadmap loaded from cache' : 'Roadmap generated!')
       setShowForm(false)
@@ -103,6 +104,13 @@ export default function Roadmap() {
                 <option value="advanced">Advanced</option>
                 <option value="expert">Expert</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Timeline (Weeks)</label>
+              <input type="number" value={weeks} onChange={e => setWeeks(+e.target.value)}
+                min={2} max={12}
+                className="w-full px-3 py-2 bg-surface-700 border border-white/10 rounded-lg text-sm text-foreground focus:outline-none focus:border-brand-500" />
+              <p className="text-[10px] text-gray-500 mt-1">How many weeks to complete? (2-12)</p>
             </div>
           </div>
           <button type="submit" disabled={generating}

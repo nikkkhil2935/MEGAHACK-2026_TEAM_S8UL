@@ -1,4 +1,5 @@
 const { groqJSON } = require('./client');
+const { INTEGRITY_SCORING } = require('../../constants/integrity');
 
 function getLanguageName(code) {
   const map = {
@@ -118,8 +119,7 @@ async function generateReport({ questions, answers, candidateName, jobTitle, int
     : 0;
 
   const tabSwitches = integrityEvents?.filter(e => e.type === 'tab_switch').length || 0;
-  const eyeDrifts = integrityEvents?.filter(e => e.type === 'eye_drift').length || 0;
-  const integrityScore = Math.max(0, 100 - (tabSwitches * 15) - (eyeDrifts * 5));
+  const integrityScore = Math.max(INTEGRITY_SCORING.MIN_SCORE, INTEGRITY_SCORING.BASE_SCORE - (tabSwitches * INTEGRITY_SCORING.TAB_SWITCH_PENALTY));
 
   const answerSummary = answers.map((a, i) => ({
     question: questions[i]?.question,
@@ -139,7 +139,7 @@ Write in ${getLanguageName(language)}.`,
     `CANDIDATE: ${candidateName}
 ROLE: ${jobTitle}
 AVERAGE SCORE: ${avgScore}/100
-INTEGRITY EVENTS: ${tabSwitches} tab switches, ${eyeDrifts} eye drift events
+INTEGRITY EVENTS: ${tabSwitches} tab switches detected
 ANSWER SUMMARY:\n${JSON.stringify(answerSummary)}
 
 Return JSON:

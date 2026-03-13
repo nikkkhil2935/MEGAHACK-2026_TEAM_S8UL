@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { BookOpen, Play, CheckCircle, ExternalLink, ChevronRight, ArrowLeft, Loader2, Trophy, Youtube } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import RoadmapTimeline from '../components/roadmap/RoadmapTimeline'
 
 export default function RoadmapDetail() {
   const { id } = useParams()
@@ -44,6 +45,17 @@ export default function RoadmapDetail() {
     return (roadmap?.completed_resources || []).some(r => r.url === url)
   }
 
+  function getCompletedWeeks() {
+    const weeks = roadmap.path_data?.weeks || [];
+    return weeks
+      .map((w, i) => {
+        const weekNum = i + 1;
+        const allCompleted = (w.resources || []).every(r => isCompleted(r.url));
+        return allCompleted ? weekNum : null;
+      })
+      .filter(Boolean);
+  }
+
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <Loader2 className="animate-spin text-brand-400" size={32} />
@@ -80,6 +92,19 @@ export default function RoadmapDetail() {
             style={{ width: `${roadmap.progress_percent || 0}%` }} />
         </div>
       </div>
+
+      {/* Timeline */}
+      <RoadmapTimeline
+        weeks={roadmap.total_weeks || weeks.length || 4}
+        currentWeek={currentWeek}
+        completedWeeks={getCompletedWeeks()}
+        onWeekSelect={(week) => {
+          if (week < currentWeek || getCompletedWeeks().includes(week)) {
+            window.scrollTo(0, 0);
+            // In a real app, this would navigate to that week
+          }
+        }}
+      />
 
       {/* Weeks */}
       <div className="space-y-6">

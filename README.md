@@ -430,6 +430,98 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ---
 
+## 🌐 Deployment Guide
+
+### Google OAuth Setup (Critical for Login)
+
+**IMPORTANT**: Google login requires proper Supabase OAuth configuration. If the hosted version's login isn't working, follow these steps:
+
+#### Step 1: Configure Supabase OAuth Provider
+
+1. Go to [Supabase Dashboard](https://supabase.com) → Select your project
+2. Navigate to **Authentication** → **Providers** → **Google**
+3. Click **Enable** and fill in:
+   - **Client ID**: Get from Google Cloud Console
+   - **Client Secret**: Get from Google Cloud Console
+4. Set **Redirect URIs** to:
+   ```
+   https://your-project.supabase.co/auth/v1/callback
+   https://your-deployed-frontend-url/auth/callback
+   ```
+
+#### Step 2: Google Cloud Console Setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a new project or select existing
+3. Enable **Google+ API**
+4. Go to **Credentials** → **Create OAuth 2.0 Client ID**
+5. Application type: **Web application**
+6. Authorized JavaScript origins:
+   ```
+   https://your-deployed-frontend-url
+   http://localhost:5173
+   ```
+7. Authorized redirect URIs:
+   ```
+   https://your-project.supabase.co/auth/v1/callback
+   https://your-deployed-frontend-url/auth/callback
+   ```
+8. Copy **Client ID** and **Client Secret** → paste into Supabase
+
+#### Step 3: Frontend Environment Variables
+
+On your hosting platform (Vercel, Render, etc.), add:
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_API_URL=https://your-backend-api-url
+```
+
+#### Step 4: Backend Environment Variables
+
+On your hosting platform, add:
+```env
+PORT=5000
+FRONTEND_URL=https://your-deployed-frontend-url
+
+# Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key
+
+# AI
+GROQ_API_KEY=your_groq_api_key
+
+# Auth
+JWT_SECRET=your_jwt_secret_here
+```
+
+#### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Google button shows but doesn't work | Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY on hosting |
+| Redirect loop after Google login | Verify redirect URI matches exactly in Supabase AND Google Cloud |
+| "Invalid OAuth provider" error | Enable Google OAuth in Supabase (step 1.2) |
+| CORS errors | Ensure FRONTEND_URL in backend matches deployed URL |
+
+### Vercel Deployment (Recommended)
+
+**Frontend:**
+```bash
+# Push to GitHub, then:
+# 1. Connect repo to Vercel
+# 2. Set environment variables (from Step 3 above)
+# 3. Deploy automatically
+```
+
+**Backend on Render or Heroku:**
+```bash
+# Push backend folder to a separate GitHub repo
+# Connect to Render/Heroku and set environment variables (from Step 4)
+```
+
+---
+
 ## 🎨 Design System
 
 ### Theme

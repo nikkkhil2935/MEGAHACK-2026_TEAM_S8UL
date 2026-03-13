@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Trophy, ArrowLeft, Loader2, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { Trophy, ArrowLeft, Loader2, CheckCircle, XCircle, Clock, Star } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import { useGamificationStore } from '../store/gamification'
+import { showXPToast } from '../utils/xpNotifications'
 
 export default function Quiz() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const roadmapId = params.get('roadmap')
   const week = parseInt(params.get('week') || '1')
+  const recordQuiz = useGamificationStore(s => s.recordQuiz)
 
   const [questions, setQuestions] = useState([])
   const [skill, setSkill] = useState('')
@@ -48,6 +51,11 @@ export default function Quiz() {
         roadmap_id: roadmapId, week, questions, candidate_answers: candidateAnswers
       })
       setResult(data)
+
+      // Award XP and record quiz completion
+      const score = data.score_percent || 0;
+      recordQuiz(score);
+      showXPToast(Math.round(score * 1.5), `Quiz Complete (${score}%)`);
     } catch { toast.error('Failed to submit quiz') }
     finally { setSubmitting(false) }
   }
@@ -73,6 +81,14 @@ export default function Quiz() {
           <h2 className="text-3xl font-bold text-foreground mb-2">{result.score_percent}%</h2>
           <p className="text-gray-400">{skill} — Week {week} Quiz</p>
           <p className="text-sm text-gray-500 mt-1">{result.total_earned}/{result.total_possible} points</p>
+
+          {/* XP Earned */}
+          <div className="mt-4 pt-4 border-t border-white/10">
+            <div className="flex items-center justify-center gap-2 text-brand-300">
+              <Star size={16} />
+              <span className="font-semibold">+{Math.round(result.score_percent * 1.5)} XP Earned</span>
+            </div>
+          </div>
         </div>
 
         {result.feedback && (

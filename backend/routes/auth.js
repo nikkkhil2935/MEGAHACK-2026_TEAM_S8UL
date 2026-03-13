@@ -1,10 +1,11 @@
 const router = require('express').Router();
-const jwt = require('jsonwebtoken');
 const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
+const { createOrGetUserProfile, extractDisplayName, generateAuthToken } = require('../services/authService');
+const { ROLES } = require('../constants');
 
 router.post('/register', async (req, res) => {
-  const { email, password, full_name, role = 'candidate', company_name } = req.body;
+  const { email, password, full_name, role = ROLES.CANDIDATE, company_name } = req.body;
 
   const { data, error } = await supabase.auth.admin.createUser({
     email, password, email_confirm: true,
@@ -12,17 +13,9 @@ router.post('/register', async (req, res) => {
   if (error) return res.status(400).json({ error: error.message });
 
   const userId = data.user.id;
-  await supabase.from('profiles').insert({ id: userId, email, full_name, role });
-
-  if (role === 'candidate') {
-    await supabase.from('candidate_profiles').insert({ user_id: userId });
-  }
-  if (role === 'recruiter') {
-    await supabase.from('recruiter_profiles').insert({ user_id: userId, company_name });
-  }
-
-  const token = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  res.json({ token, user: { id: userId, email, full_name, role } });
+  const profile = await createOrGetUserProfile(userId, email, full_name, role, company_name);
+  const token = generateAuthToken(userId);
+  res.json({ token, user: profile });
 });
 
 router.post('/login', async (req, res) => {
@@ -32,10 +25,30 @@ router.post('/login', async (req, res) => {
 
   const { data: profile } = await supabase
     .from('profiles').select('*').eq('id', data.user.id).single();
-  const token = jwt.sign({ userId: data.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  const token = generateAuthToken(data.user.id);
   res.json({ token, user: profile });
 });
 
 router.get('/me', authenticate, (req, res) => res.json({ user: req.user }));
+
+router.post('/oauth-callback', async (req, res) => {
+  try {
+    const { access_token } = req.body;
+    if (!access_token) return res.status(400).json({ error: 'Missing access_token' });
+
+    const { data: { user: authUser }, error } = await supabase.auth.getUser(access_token);
+    if (error || !authUser) return res.status(401).json({ error: 'Invalid OAuth token' });
+
+    const full_name = extractDisplayName(authUser);
+    const email = authUser.email;
+    const role = ROLES.CANDIDATE;
+
+    const profile = await createOrGetUserProfile(authUser.id, email, full_name, role);
+    const token = generateAuthToken(authUser.id);
+    res.json({ token, user: profile });
+  } catch (err) {
+    res.status(500).json({ error: 'OAuth callback failed' });
+  }
+});
 
 module.exports = router;

@@ -4,6 +4,9 @@ import { motion } from 'framer-motion'
 import { Mic, Briefcase, User, TrendingUp, Award, Target, BookOpen, GraduationCap, Flame } from 'lucide-react'
 import api from '../services/api'
 import { useAuthStore } from '../store/auth'
+import { useGamificationStore } from '../store/gamification'
+import XPProgressCard from '../components/gamification/XPProgressCard'
+import BadgesDisplay from '../components/gamification/BadgesDisplay'
 
 function StatCard({ icon: Icon, label, value, color = 'text-brand-400' }) {
   return (
@@ -21,6 +24,7 @@ function StatCard({ icon: Icon, label, value, color = 'text-brand-400' }) {
 
 export default function Dashboard() {
   const { user } = useAuthStore()
+  const gamStats = useGamificationStore(s => s.getStats())
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -51,6 +55,9 @@ export default function Dashboard() {
           <StatCard icon={TrendingUp} label="Avg Match" value={`${data?.avg_match_score || 0}%`} color="text-green-400" />
           <StatCard icon={Award} label="Avg Interview" value={data?.avg_interview_score || 0} color="text-yellow-400" />
         </div>
+
+        {/* XP Progress */}
+        <XPProgressCard stats={gamStats} className="mb-8" />
 
         {/* Profile Strength */}
         {data?.profile_strength !== undefined && (
@@ -88,7 +95,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <div className="text-foreground font-semibold text-sm">
-                  🔥 {data.interview_streak || data.total_interviews} Day Practice Streak
+                  🔥 {gamStats.streakDays} Day Practice Streak
                 </div>
                 <div className="text-xs text-gray-400">
                   {data.total_interviews} interviews completed • Keep practicing daily!
@@ -97,6 +104,9 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        {/* Achievements */}
+        <BadgesDisplay badges={gamStats.badges} className="mb-8" />
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">

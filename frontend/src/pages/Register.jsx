@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Mail, Lock, User, Building2, UserPlus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/auth'
+import FormLabel from '../components/auth/FormLabel'
 
 export default function Register() {
   const [form, setForm] = useState({ full_name: '', email: '', password: '', role: 'candidate', company_name: '' })
@@ -43,7 +44,7 @@ export default function Register() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Role Selector */}
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block">I am a</label>
+            <FormLabel spacing="mb-2">I am a</FormLabel>
             <div className="grid grid-cols-2 gap-2">
               {['candidate', 'recruiter'].map(role => (
                 <button key={role} type="button" onClick={() => setForm(f => ({ ...f, role }))}
@@ -59,7 +60,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Full Name</label>
+            <FormLabel>Full Name</FormLabel>
             <div className="relative">
               <User size={16} className="absolute left-3 top-3.5 text-gray-500" />
               <input type="text" value={form.full_name} onChange={set('full_name')}
@@ -68,7 +69,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Email</label>
+            <FormLabel>Email</FormLabel>
             <div className="relative">
               <Mail size={16} className="absolute left-3 top-3.5 text-gray-500" />
               <input type="email" value={form.email} onChange={set('email')}
@@ -77,7 +78,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Password</label>
+            <FormLabel>Password</FormLabel>
             <div className="relative">
               <Lock size={16} className="absolute left-3 top-3.5 text-gray-500" />
               <input type="password" value={form.password} onChange={set('password')}
@@ -87,7 +88,7 @@ export default function Register() {
 
           {form.role === 'recruiter' && (
             <div>
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Company Name</label>
+              <FormLabel>Company Name</FormLabel>
               <div className="relative">
                 <Building2 size={16} className="absolute left-3 top-3.5 text-gray-500" />
                 <input type="text" value={form.company_name} onChange={set('company_name')}

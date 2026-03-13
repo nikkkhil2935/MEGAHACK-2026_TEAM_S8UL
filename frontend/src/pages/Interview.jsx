@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, MicOff, Volume2, StopCircle, Clock, EyeOff, AlertTriangle,
-  Globe, Send, PhoneOff, User, Bot, Loader2, Upload, Eye
+  Globe, Send, PhoneOff, User, Bot, Loader2, Upload
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
@@ -99,68 +99,6 @@ function useAudioRecorder() {
   return { isRecording, audioBlob, recordingTime, startRecording, stopRecording, resetRecording }
 }
 
-/* ────── Face Tracking / Gaze Detection Hook ────── */
-function useFaceTracking(videoRef, isActive) {
-  const [gazeStatus, setGazeStatus] = useState('centered') // centered | drifted | no-face
-  const alertCountRef = useRef(0)
-
-  useEffect(() => {
-    if (!isActive || !videoRef.current) return
-
-    let detector = null
-    let interval = null
-    let noFaceCount = 0
-
-    // Try native FaceDetector (Chrome)
-    if ('FaceDetector' in window) {
-      detector = new FaceDetector({ fastMode: true, maxDetectedFaces: 1 })
-    }
-
-    interval = setInterval(async () => {
-      if (!videoRef.current || videoRef.current.readyState < 2) return
-
-      try {
-        if (detector) {
-          const faces = await detector.detect(videoRef.current)
-          if (faces.length === 0) {
-            noFaceCount++
-            if (noFaceCount > 3) { // 3 consecutive misses = alert
-              setGazeStatus('no-face')
-              alertCountRef.current++
-            }
-          } else {
-            noFaceCount = 0
-            const face = faces[0].boundingBox
-            const videoW = videoRef.current.videoWidth
-            const videoH = videoRef.current.videoHeight
-            const centerX = face.x + face.width / 2
-            const centerY = face.y + face.height / 2
-
-            // Check if face center is roughly in middle 60% of frame
-            const isLookingAway = centerX < videoW * 0.2 || centerX > videoW * 0.8 || centerY < videoH * 0.15 || centerY > videoH * 0.85
-
-            if (isLookingAway) {
-              setGazeStatus('drifted')
-              alertCountRef.current++
-            } else {
-              setGazeStatus('centered')
-            }
-          }
-        } else {
-          // Fallback: just mark as centered if no FaceDetector
-          setGazeStatus('centered')
-        }
-      } catch {
-        // FaceDetector not supported, ignore
-      }
-    }, 2000) // Check every 2 seconds
-
-    return () => clearInterval(interval)
-  }, [isActive, videoRef])
-
-  return { gazeStatus, eyeAlertCount: alertCountRef.current }
-}
-
 /* ────── Main Interview Component ────── */
 export default function Interview() {
   const navigate = useNavigate()
@@ -201,22 +139,6 @@ export default function Interview() {
   const [cameraOn, setCameraOn] = useState(false)
 
   const { isRecording, audioBlob, recordingTime, startRecording, stopRecording, resetRecording } = useAudioRecorder()
-  const { gazeStatus, eyeAlertCount } = useFaceTracking(videoRef, phase === 'active' && cameraOn)
-
-  // Eye tracking: detect prolonged drift/no-face and fire integrity alerts
-  const lastGazeAlertRef = useRef(0)
-  useEffect(() => {
-    if (phase !== 'active' || !sessionId) return
-    if (gazeStatus === 'centered') return
-    // Throttle: only alert once every 6 seconds (3 checks × 2s interval)
-    const now = Date.now()
-    if (now - lastGazeAlertRef.current < 6000) return
-    lastGazeAlertRef.current = now
-
-    setAlerts(prev => [...prev, { type: 'eye_drift', time: now }])
-    api.post('/interview/integrity', { session_id: sessionId, event_type: 'eye_drift' }).catch(() => {})
-    toast.error(gazeStatus === 'no-face' ? '⚠️ Face not detected — please look at the screen' : '⚠️ Eye drift detected — stay focused')
-  }, [gazeStatus, phase, sessionId])
 
   // Auto-scroll chat
   useEffect(() => {
@@ -577,7 +499,6 @@ export default function Interview() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Eye size={12} className={gazeStatus === 'centered' ? 'text-green-400' : gazeStatus === 'drifted' ? 'text-yellow-400' : 'text-red-400'} />
           {integrityAlerts.length > 0 && (
             <div className="flex items-center gap-1 bg-red-500/20 rounded-lg px-2 py-1">
               <AlertTriangle size={10} className="text-red-400" />
@@ -615,16 +536,6 @@ export default function Interview() {
             <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-1">
               <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               <span className="text-[10px] text-white font-medium tracking-wider">LIVE</span>
-            </div>
-          )}
-
-          {/* Gaze status indicator */}
-          {cameraOn && (
-            <div className="absolute top-4 left-24 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-full px-2.5 py-1">
-              <div className={`w-2 h-2 rounded-full ${gazeStatus === 'centered' ? 'bg-green-500' : gazeStatus === 'drifted' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500 animate-pulse'}`} />
-              <span className="text-[10px] text-white/80 font-medium">
-                {gazeStatus === 'centered' ? 'Focused' : gazeStatus === 'drifted' ? 'Look ahead' : 'No face'}
-              </span>
             </div>
           )}
 
