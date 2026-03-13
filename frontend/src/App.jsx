@@ -12,6 +12,10 @@ import JobDetail from './pages/JobDetail'
 import Interview from './pages/Interview'
 import InterviewReport from './pages/InterviewReport'
 import InterviewHistory from './pages/InterviewHistory'
+import Roadmap from './pages/Roadmap'
+import RoadmapDetail from './pages/RoadmapDetail'
+import Quiz from './pages/Quiz'
+import Tutor from './pages/Tutor'
 
 function PrivateRoute({ children }) {
   const { token } = useAuthStore()
@@ -41,6 +45,10 @@ export default function App() {
         <Route path="/interview" element={<PrivateRoute><Interview /></PrivateRoute>} />
         <Route path="/interview/report/:id" element={<PrivateRoute><InterviewReport /></PrivateRoute>} />
         <Route path="/interview/history" element={<PrivateRoute><InterviewHistory /></PrivateRoute>} />
+        <Route path="/roadmap" element={<PrivateRoute><Roadmap /></PrivateRoute>} />
+        <Route path="/roadmap/:id" element={<PrivateRoute><RoadmapDetail /></PrivateRoute>} />
+        <Route path="/quiz" element={<PrivateRoute><Quiz /></PrivateRoute>} />
+        <Route path="/tutor" element={<PrivateRoute><Tutor /></PrivateRoute>} />
       </Routes>
     </>
   )

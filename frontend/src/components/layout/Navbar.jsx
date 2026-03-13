@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
-import { LayoutDashboard, Briefcase, Mic, User, LogOut, History } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Mic, User, LogOut, History, Map, MessageCircle } from 'lucide-react'
 
 export default function Navbar() {
   const { user, logout } = useAuthStore()
@@ -16,6 +16,8 @@ export default function Navbar() {
     { to: '/jobs', icon: Briefcase, label: 'Jobs' },
     { to: '/interview', icon: Mic, label: 'Interview' },
     { to: '/interview/history', icon: History, label: 'History' },
+    { to: '/roadmap', icon: Map, label: 'Roadmap' },
+    { to: '/tutor', icon: MessageCircle, label: 'Tutor' },
     { to: '/profile', icon: User, label: 'Profile' },
   ]
 

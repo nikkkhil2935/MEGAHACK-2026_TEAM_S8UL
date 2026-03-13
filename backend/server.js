@@ -27,6 +27,9 @@ app.use('/api/linkedin', require('./routes/linkedin'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/interview', require('./routes/interview'));
 app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/tutor',     require('./routes/tutor'));
+app.use('/api/roadmap',   require('./routes/roadmap'));
+app.use('/api/quiz',      require('./routes/quiz'));
 
 // Socket.io: Real-time interview events
 io.on('connection', (socket) => {
