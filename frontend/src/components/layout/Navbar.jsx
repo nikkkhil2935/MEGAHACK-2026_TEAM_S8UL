@@ -46,6 +46,7 @@ export default function Navbar() {
     { to: '/profile', icon: User, label: 'Profile' },
     { to: '/jobs', icon: Briefcase, label: 'Workspace' },
     { to: '/interview', icon: Mic, label: 'Interviews' },
+    { to: '/interview/history', icon: History, label: 'History & Analytics' },
     { to: '/tutor', icon: Bot, label: 'AI Tutor' },
     { to: '/quiz', icon: Brain, label: 'Quizzes' },
     { to: '/resume-improver', icon: FileText, label: 'Resume AI' },
@@ -108,7 +109,7 @@ export default function Navbar() {
         {/* Navigation Links */}
         <div className="flex-1 px-4 overflow-y-auto space-y-1">
           {links.map(({ to, icon: Icon, label }) => {
-            const isActive = location.pathname.startsWith(to) && (to !== '/dashboard' || location.pathname === '/dashboard')
+            const isActive = location.pathname === to || (location.pathname.startsWith(to + '/') && to !== '/interview')
             return (
               <Link key={to} to={to} onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all ${
