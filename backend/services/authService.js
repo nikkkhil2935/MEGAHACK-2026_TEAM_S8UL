@@ -1,6 +1,6 @@
-const supabase = require('../../db/supabase');
+const supabase = require('../db/supabase');
 const jwt = require('jsonwebtoken');
-const { ROLES } = require('../../constants');
+const { ROLES } = require('../constants');
 
 /**
  * Create or get user profile
