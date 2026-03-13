@@ -9,6 +9,7 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 const server = http.createServer(app);
+const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : ['http://localhost:5173'];
 const io = new Server(server, {
   cors: { origin: allowedOrigins, credentials: true }
 });
@@ -17,7 +18,6 @@ const io = new Server(server, {
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 300 }));
-const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : ['http://localhost:5173'];
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: '15mb' }));
 
