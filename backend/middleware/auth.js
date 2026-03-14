@@ -7,10 +7,15 @@ const authenticate = async (req, res, next) => {
   try {
     const { userId } = jwt.verify(token, process.env.JWT_SECRET);
     const user = await getUserProfile(userId);
+    if (!user) return res.status(401).json({ error: 'Profile not found' });
     req.user = user;
     next();
-  } catch {
-    res.status(401).json({ error: 'Invalid or expired token' });
+  } catch (err) {
+    if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    console.error('Auth middleware error:', err.message);
+    res.status(500).json({ error: 'Authentication service error' });
   }
 };
 

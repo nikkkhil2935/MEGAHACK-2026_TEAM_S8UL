@@ -17,12 +17,16 @@ api.interceptors.response.use(
   r => r,
   err => {
     const url = err.config?.url || ''
-    // Don't redirect on auth endpoints or when explicitly skipped
-    if (err.response?.status === 401 && !url.includes('/auth/') && !err.config?._skipAuthRedirect) {
-      localStorage.removeItem('careerbridge-auth')
-      window.location.href = '/login'
+    const status = err.response?.status
+    const errorMsg = err.response?.data?.error || ''
+    // Only redirect on real token failures — not server errors disguised as 401
+    if (status === 401 && !url.includes('/auth/') && !err.config?._skipAuthRedirect) {
+      if (errorMsg === 'Invalid or expired token' || errorMsg === 'No token provided') {
+        localStorage.removeItem('careerbridge-auth')
+        window.location.href = '/login'
+      }
     }
-    if (err.response?.status === 429 && !err.config?._skipRateLimitToast) toast.error('Rate limit hit — wait 1 minute')
+    if (status === 429 && !err.config?._skipRateLimitToast) toast.error('Rate limit hit — wait 1 minute')
     return Promise.reject(err)
   }
 )

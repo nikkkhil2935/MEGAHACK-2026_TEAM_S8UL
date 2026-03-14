@@ -57,11 +57,14 @@ function generateAuthToken(userId) {
 async function getUserProfile(userId) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id,email,full_name,role,created_at')
+    .select('id,email,full_name,role,avatar_url,preferred_language,created_at')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    console.error('getUserProfile error:', error.message);
+    return null;
+  }
   return data;
 }
 
