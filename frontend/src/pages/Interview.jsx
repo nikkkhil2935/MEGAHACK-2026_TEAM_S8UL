@@ -233,7 +233,10 @@ export default function Interview() {
     try {
       await startCamera()
       setPhase('loading')
-      const { data } = await api.post('/interview/start', { ...config, interview_type: config.type, panel_mode: config.panel_mode, jd_text: jdText || undefined })
+      const { data } = await api.post('/interview/start', {
+        ...config, interview_type: config.type, panel_mode: config.panel_mode,
+        jd_text: jdText || undefined
+      }, { _skipAuthRedirect: true })
       setSessionId(data.session_id)
       setQuestions(data.questions)
       startTimer()
@@ -251,8 +254,15 @@ export default function Interview() {
       // Ask first question
       await askQuestion(data.questions[0])
     } catch (err) {
+      stopCamera()
       setPhase('setup')
-      toast.error(err.response?.data?.error || 'Failed to start. Upload your resume first.')
+      const msg = err.response?.data?.error
+      if (err.response?.status === 401) {
+        toast.error('Session expired. Please log in again.')
+        navigate('/login')
+      } else {
+        toast.error(msg || 'Failed to start. Upload your resume first.')
+      }
     }
   }
 

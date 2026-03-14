@@ -17,8 +17,8 @@ api.interceptors.response.use(
   r => r,
   err => {
     const url = err.config?.url || ''
-    // Don't redirect on auth endpoints — let the login/register page handle errors
-    if (err.response?.status === 401 && !url.includes('/auth/')) {
+    // Don't redirect on auth endpoints or when explicitly skipped
+    if (err.response?.status === 401 && !url.includes('/auth/') && !err.config?._skipAuthRedirect) {
       localStorage.removeItem('careerbridge-auth')
       window.location.href = '/login'
     }
