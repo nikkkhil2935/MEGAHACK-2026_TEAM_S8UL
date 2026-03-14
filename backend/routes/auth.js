@@ -71,13 +71,14 @@ router.post('/oauth-callback', async (req, res) => {
   }
 });
 
-// Update profile (full_name, preferred_language)
+// Update profile (full_name, preferred_language, avatar_url)
 router.put('/profile', authenticate, async (req, res) => {
   try {
-    const { full_name, preferred_language } = req.body;
+    const { full_name, preferred_language, avatar_url } = req.body;
     const updates = {};
     if (full_name) updates.full_name = full_name;
     if (preferred_language) updates.preferred_language = preferred_language;
+    if (avatar_url) updates.avatar_url = avatar_url;
 
     const { error } = await supabase.from('profiles')
       .update(updates).eq('id', req.user.id);

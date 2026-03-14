@@ -1,9 +1,28 @@
 import { useState, useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
-import { Upload, FileText, RefreshCw, Check, AlertCircle, Camera, Pencil, Save, X, CheckCircle } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Upload, FileText, RefreshCw, Check, AlertCircle, Camera, Pencil, Save, X, CheckCircle, Grid3X3 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useAuthStore } from '../store/auth'
+
+const AVATAR_STYLES = [
+  { id: 'adventurer', label: 'Adventurer' },
+  { id: 'adventurer-neutral', label: 'Neutral' },
+  { id: 'avataaars', label: 'Avataaars' },
+  { id: 'big-ears', label: 'Big Ears' },
+  { id: 'bottts', label: 'Robots' },
+  { id: 'fun-emoji', label: 'Emoji' },
+  { id: 'lorelei', label: 'Lorelei' },
+  { id: 'notionists', label: 'Notionists' },
+  { id: 'pixel-art', label: 'Pixel Art' },
+  { id: 'thumbs', label: 'Thumbs' },
+]
+
+const AVATAR_SEEDS = ['Felix', 'Aneka', 'Luna', 'Milo', 'Zoe', 'Kai', 'Nova', 'Rex', 'Iris', 'Leo', 'Cleo', 'Dash', 'Sage', 'Juno', 'Orion', 'Piper']
+
+function getAvatarUrl(style, seed) {
+  return `https://api.dicebear.com/9.x/${style}/svg?seed=${seed}`
+}
 
 export default function Profile() {
   const { user, setUser } = useAuthStore()
@@ -17,6 +36,9 @@ export default function Profile() {
   const [editData, setEditData] = useState({})
   const [saving, setSaving] = useState(false)
   const [verifiedSkills, setVerifiedSkills] = useState([])
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const [avatarStyle, setAvatarStyle] = useState('adventurer')
+  const [savingAvatar, setSavingAvatar] = useState(false)
   const fileRef = useRef(null)
   const avatarRef = useRef(null)
 
@@ -80,6 +102,20 @@ export default function Profile() {
       toast.error(err.response?.data?.error || 'Upload failed')
     } finally {
       setUploadingAvatar(false)
+    }
+  }
+
+  const selectAvatar = async (avatarUrl) => {
+    setSavingAvatar(true)
+    try {
+      const { data } = await api.put('/auth/profile', { avatar_url: avatarUrl })
+      setUser(data.user)
+      setShowAvatarPicker(false)
+      toast.success('Avatar updated!')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to update avatar')
+    } finally {
+      setSavingAvatar(false)
     }
   }
 
@@ -159,17 +195,29 @@ export default function Profile() {
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={() => avatarRef.current?.click()}
-                  disabled={uploadingAvatar}
-                  className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                >
-                  {uploadingAvatar ? (
-                    <RefreshCw size={20} className="text-white animate-spin" />
-                  ) : (
-                    <Camera size={20} className="text-white" />
-                  )}
-                </button>
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => avatarRef.current?.click()}
+                      disabled={uploadingAvatar}
+                      className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors cursor-pointer"
+                      title="Upload photo"
+                    >
+                      {uploadingAvatar ? (
+                        <RefreshCw size={14} className="text-white animate-spin" />
+                      ) : (
+                        <Camera size={14} className="text-white" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setShowAvatarPicker(true)}
+                      className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors cursor-pointer"
+                      title="Choose avatar"
+                    >
+                      <Grid3X3 size={14} className="text-white" />
+                    </button>
+                  </div>
+                </div>
                 <input ref={avatarRef} type="file" accept="image/*" onChange={uploadAvatar} className="hidden" />
               </div>
 
@@ -384,6 +432,84 @@ export default function Profile() {
             </div>
           )}
         </motion.div>
+
+        {/* Avatar Picker Modal */}
+        <AnimatePresence>
+          {showAvatarPicker && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+              onClick={() => setShowAvatarPicker(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-surface-800 border border-white/10 rounded-2xl p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl"
+              >
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-lg font-display font-bold text-foreground">Choose an Avatar</h3>
+                  <button onClick={() => setShowAvatarPicker(false)} className="p-1.5 rounded-lg hover:bg-surface-700 text-gray-400 hover:text-foreground transition-colors">
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* Style Tabs */}
+                <div className="flex flex-wrap gap-1.5 mb-5">
+                  {AVATAR_STYLES.map(style => (
+                    <button
+                      key={style.id}
+                      onClick={() => setAvatarStyle(style.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        avatarStyle === style.id
+                          ? 'bg-brand-500 text-white'
+                          : 'bg-surface-700 text-gray-400 hover:text-foreground hover:bg-surface-600'
+                      }`}
+                    >
+                      {style.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Avatar Grid */}
+                <div className="grid grid-cols-4 gap-3">
+                  {AVATAR_SEEDS.map(seed => {
+                    const url = getAvatarUrl(avatarStyle, seed)
+                    const isSelected = user?.avatar_url === url
+                    return (
+                      <button
+                        key={seed}
+                        onClick={() => selectAvatar(url)}
+                        disabled={savingAvatar}
+                        className={`relative aspect-square rounded-xl p-2 transition-all hover:scale-105 cursor-pointer ${
+                          isSelected
+                            ? 'bg-brand-500/20 border-2 border-brand-500 ring-2 ring-brand-500/30'
+                            : 'bg-surface-700 border-2 border-transparent hover:border-white/20'
+                        } disabled:opacity-50`}
+                      >
+                        <img src={url} alt={seed} className="w-full h-full rounded-lg" loading="lazy" />
+                        {isSelected && (
+                          <div className="absolute top-1 right-1 w-5 h-5 bg-brand-500 rounded-full flex items-center justify-center">
+                            <Check size={12} className="text-white" />
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {savingAvatar && (
+                  <div className="flex items-center justify-center gap-2 mt-4 text-sm text-gray-400">
+                    <RefreshCw size={14} className="animate-spin" /> Saving...
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )
