@@ -140,7 +140,7 @@ export default function Roadmap() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-foreground">{rm.skill_name}</h3>
-                      <p className="text-xs text-gray-400 mt-0.5">Week {rm.current_week} of 4</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Week {rm.current_week || 1} of {rm.total_weeks || 4}</p>
                     </div>
                   </div>
                   <ChevronRight size={18} className="text-gray-500" />

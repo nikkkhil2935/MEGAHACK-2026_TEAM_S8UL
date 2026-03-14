@@ -3,29 +3,34 @@ const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
 
 router.get('/candidate', authenticate, async (req, res) => {
-  const uid = req.user.id;
-  const [apps, interviews, profile] = await Promise.all([
-    supabase.from('applications').select('status, match_score, job_id, applied_at').eq('candidate_id', uid),
-    supabase.from('interview_sessions')
-      .select('id, interview_type, overall_score, integrity_score, status, started_at, ended_at, language, job_postings(title)')
-      .eq('candidate_id', uid).eq('status', 'completed').order('created_at', { ascending: false }).limit(10),
-    supabase.from('candidate_profiles').select('parsed_data, completeness_score').eq('user_id', uid).single(),
-  ]);
+  try {
+    const uid = req.user.id;
+    const [apps, interviews, profile] = await Promise.allSettled([
+      supabase.from('applications').select('status, match_score, job_id, applied_at').eq('candidate_id', uid),
+      supabase.from('interview_sessions')
+        .select('id, interview_type, overall_score, integrity_score, status, started_at, ended_at, language, job_postings(title)')
+        .eq('candidate_id', uid).eq('status', 'completed').order('created_at', { ascending: false }).limit(10),
+      supabase.from('candidate_profiles').select('parsed_data, completeness_score').eq('user_id', uid).maybeSingle(),
+    ]);
 
-  const avg_match = apps.data?.length
-    ? Math.round(apps.data.reduce((s, a) => s + (a.match_score || 0), 0) / apps.data.length)
+    const appsData = apps.status === 'fulfilled' ? apps.value.data || [] : [];
+    const interviewsData = interviews.status === 'fulfilled' ? interviews.value.data || [] : [];
+    const profileData = profile.status === 'fulfilled' ? profile.value.data : null;
+
+  const avg_match = appsData.length
+    ? Math.round(appsData.reduce((s, a) => s + (a.match_score || 0), 0) / appsData.length)
     : 0;
 
-  const avg_interview = interviews.data?.length
-    ? Math.round(interviews.data.reduce((s, i) => s + (i.overall_score || 0), 0) / interviews.data.length)
+  const avg_interview = interviewsData.length
+    ? Math.round(interviewsData.reduce((s, i) => s + (i.overall_score || 0), 0) / interviewsData.length)
     : 0;
 
   // Interview streak calculation
   let streak = 0;
-  if (interviews.data?.length > 0) {
+  if (interviewsData.length > 0) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const sorted = interviews.data
+    const sorted = interviewsData
       .map(i => { const d = new Date(i.started_at); d.setHours(0,0,0,0); return d.getTime(); })
       .filter((v, i, a) => a.indexOf(v) === i)
       .sort((a, b) => b - a);
@@ -40,8 +45,8 @@ router.get('/candidate', authenticate, async (req, res) => {
   }
 
   // Profile strength calculation
-  const parsed = profile.data?.parsed_data || {};
-  const totalInterviews = interviews.data?.length || 0;
+  const parsed = profileData?.parsed_data || {};
+  const totalInterviews = interviewsData.length;
   let strength = 0;
   const nudges = [];
 
@@ -55,7 +60,7 @@ router.get('/candidate', authenticate, async (req, res) => {
   if (totalInterviews > 0) strength += 10; else nudges.push('Take your first mock interview to boost your profile');
 
   // Flatten interview data for frontend consumption
-  const recentInterviews = (interviews.data || []).map(i => ({
+  const recentInterviews = interviewsData.map(i => ({
     id: i.id,
     job_title: i.job_postings?.title || i.interview_type || 'Mock Interview',
     company: 'Practice Session',
@@ -68,22 +73,26 @@ router.get('/candidate', authenticate, async (req, res) => {
   }));
 
   res.json({
-    total_applications: apps.data?.length || 0,
+    total_applications: appsData.length,
     total_interviews: totalInterviews,
     avg_match_score: avg_match,
     avg_interview_score: avg_interview,
-    skills_count: profile.data?.parsed_data?.skills?.length || 0,
-    completeness_score: profile.data?.completeness_score || 0,
-    applications: apps.data || [],
+    skills_count: profileData?.parsed_data?.skills?.length || 0,
+    completeness_score: profileData?.completeness_score || 0,
+    applications: appsData,
     recent_interviews: recentInterviews,
     stats: {
       totalInterviews,
-      totalApplications: apps.data?.length || 0,
+      totalApplications: appsData.length,
     },
     profile_strength: Math.min(100, strength),
     profile_nudges: nudges.map(msg => ({ type: 'missing_field', message: msg })),
     interview_streak: streak,
   });
+  } catch (err) {
+    console.error('Dashboard error:', err.message);
+    res.status(500).json({ error: 'Failed to load dashboard' });
+  }
 });
 
 module.exports = router;

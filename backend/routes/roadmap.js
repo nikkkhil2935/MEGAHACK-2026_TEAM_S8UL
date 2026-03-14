@@ -10,7 +10,7 @@ router.post('/generate', authenticate, async (req, res) => {
 
     // Check if roadmap already exists
     const { data: existing } = await supabase.from('learning_roadmaps')
-      .select('*').eq('candidate_id', req.user.id).eq('skill_name', skill).single();
+      .select('*').eq('candidate_id', req.user.id).eq('skill_name', skill).maybeSingle();
 
     if (existing) return res.json({ roadmap: existing, cached: true });
 
@@ -36,11 +36,26 @@ router.post('/generate', authenticate, async (req, res) => {
 
 // Get all roadmaps for a candidate
 router.get('/', authenticate, async (req, res) => {
-  const { data } = await supabase.from('learning_roadmaps')
-    .select('id, skill_name, current_week, progress_percent, started_at, updated_at')
-    .eq('candidate_id', req.user.id)
-    .order('updated_at', { ascending: false });
-  res.json(data || []);
+  try {
+    const { data } = await supabase.from('learning_roadmaps')
+      .select('id, skill_name, current_week, progress_percent, path_data, started_at, updated_at')
+      .eq('candidate_id', req.user.id)
+      .order('updated_at', { ascending: false });
+    // Include total_weeks derived from path_data
+    const roadmaps = (data || []).map(rm => ({
+      id: rm.id,
+      skill_name: rm.skill_name,
+      current_week: rm.current_week,
+      progress_percent: rm.progress_percent,
+      total_weeks: rm.path_data?.total_weeks || rm.path_data?.weeks?.length || 4,
+      started_at: rm.started_at,
+      updated_at: rm.updated_at,
+    }));
+    res.json(roadmaps);
+  } catch (err) {
+    console.error('Roadmap list error:', err.message);
+    res.json([]);
+  }
 });
 
 // Get specific roadmap
@@ -58,11 +73,22 @@ router.post('/:id/complete', authenticate, async (req, res) => {
     const { data: roadmap } = await supabase.from('learning_roadmaps')
       .select('completed_resources, path_data').eq('id', req.params.id).single();
 
-    const completed = [...(roadmap.completed_resources || []), { url: resource_url, week, completed_at: new Date() }];
+    if (!roadmap) return res.status(404).json({ error: 'Roadmap not found' });
+
+    // Prevent duplicate completions
+    const existing = roadmap.completed_resources || [];
+    if (existing.some(r => r.url === resource_url)) {
+      const totalResources = roadmap.path_data?.weeks?.reduce(
+        (sum, w) => sum + (w.resources?.length || 0), 0
+      ) || 1;
+      return res.json({ progress: Math.round((existing.length / totalResources) * 100), completed_count: existing.length });
+    }
+
+    const completed = [...existing, { url: resource_url, week, completed_at: new Date() }];
     const totalResources = roadmap.path_data?.weeks?.reduce(
       (sum, w) => sum + (w.resources?.length || 0), 0
     ) || 1;
-    const progress = Math.round((completed.length / totalResources) * 100);
+    const progress = Math.min(100, Math.round((completed.length / totalResources) * 100));
 
     await supabase.from('learning_roadmaps').update({
       completed_resources: completed, progress_percent: progress, updated_at: new Date()
@@ -77,14 +103,22 @@ router.post('/:id/complete', authenticate, async (req, res) => {
 
 // Advance to next week
 router.post('/:id/next-week', authenticate, async (req, res) => {
-  const { data } = await supabase.from('learning_roadmaps')
-    .select('current_week').eq('id', req.params.id).single();
+  try {
+    const { data } = await supabase.from('learning_roadmaps')
+      .select('current_week, path_data').eq('id', req.params.id).single();
 
-  const next = Math.min((data.current_week || 1) + 1, 4);
-  await supabase.from('learning_roadmaps')
-    .update({ current_week: next }).eq('id', req.params.id);
+    if (!data) return res.status(404).json({ error: 'Roadmap not found' });
 
-  res.json({ current_week: next });
+    const maxWeeks = data.path_data?.total_weeks || data.path_data?.weeks?.length || 4;
+    const next = Math.min((data.current_week || 1) + 1, maxWeeks);
+    await supabase.from('learning_roadmaps')
+      .update({ current_week: next }).eq('id', req.params.id);
+
+    res.json({ current_week: next });
+  } catch (err) {
+    console.error('Next week error:', err.message);
+    res.status(500).json({ error: 'Failed to advance week' });
+  }
 });
 
 module.exports = router;

@@ -46,11 +46,10 @@ export default function RoadmapDetail() {
   }
 
   function getCompletedWeeks() {
-    const weeks = roadmap.path_data?.weeks || [];
     return weeks
-      .map((w, i) => {
-        const weekNum = i + 1;
-        const allCompleted = (w.resources || []).every(r => isCompleted(r.url));
+      .map((w) => {
+        const weekNum = w.week;
+        const allCompleted = (w.resources || []).length > 0 && (w.resources || []).every(r => isCompleted(r.url));
         return allCompleted ? weekNum : null;
       })
       .filter(Boolean);
@@ -65,7 +64,7 @@ export default function RoadmapDetail() {
   if (!roadmap) return null
 
   const pathData = roadmap.path_data || {}
-  const weeks = pathData.weeks || []
+  const weeks = (pathData.weeks || []).map((w, i) => ({ ...w, week: w.week || (i + 1) }))
   const currentWeek = roadmap.current_week || 1
 
   return (

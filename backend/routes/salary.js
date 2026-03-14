@@ -39,26 +39,26 @@ router.post('/predict', authenticate, async (req, res) => {
     }
 
     // Fetch candidate parsed profile
-    const { data: candidateProfile, error: profileError } = await supabase
+    const { data: candidateProfile } = await supabase
       .from('candidate_profiles')
       .select('parsed_data')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !candidateProfile?.parsed_data) {
-      return res.status(400).json({ error: 'Profile not found. Please upload your resume first.' });
-    }
-
-    const parsed = candidateProfile.parsed_data;
+    const parsed = candidateProfile?.parsed_data || {};
 
     // Optional GitHub portfolio context
-    const { data: ghData } = await supabase
-      .from('github_analyses')
-      .select('analysis')
-      .eq('user_id', userId)
-      .maybeSingle?.()
-      // fallback for older supabase-js versions
-      || { data: null };
+    let ghData = null;
+    try {
+      const ghResult = await supabase
+        .from('github_analyses')
+        .select('analysis')
+        .eq('user_id', userId)
+        .maybeSingle();
+      ghData = ghResult.data;
+    } catch {
+      // table may not exist or query fails — continue without github data
+    }
 
     const githubAnalysis = ghData?.analysis || null;
 
@@ -128,16 +128,20 @@ Respond ONLY with a JSON object (no markdown, no backticks) in this exact struct
       throw new Error('Both AI and ML model failed');
     }
 
-    // Persist prediction history
-    await supabase.from('salary_predictions').insert({
-      user_id: userId,
-      target_role: targetRole,
-      industry,
-      country,
-      employment_type: employmentType,
-      prediction,
-      created_at: new Date().toISOString(),
-    });
+    // Persist prediction history (ignore errors — table may not exist yet)
+    try {
+      await supabase.from('salary_predictions').insert({
+        user_id: userId,
+        target_role: targetRole,
+        industry,
+        country,
+        employment_type: employmentType,
+        prediction,
+        created_at: new Date().toISOString(),
+      });
+    } catch {
+      // salary_predictions table may not exist — don't block the response
+    }
 
     res.json({ success: true, prediction, modelPrediction });
   } catch (err) {
@@ -156,10 +160,10 @@ router.get('/history', authenticate, async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(10);
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return res.json({ predictions: [] });
     res.json({ predictions: data || [] });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to load salary history' });
+    res.json({ predictions: [] });
   }
 });
 

@@ -14,7 +14,10 @@ router.get('/conversations', authenticate, async (req, res) => {
       .or(`sender_id.eq.${uid},receiver_id.eq.${uid}`)
       .order('created_at', { ascending: false });
 
-    if (error) return res.status(400).json({ error: error.message });
+    if (error) {
+      console.error('Conversations fetch error:', error.message);
+      return res.json([]);
+    }
 
     // Build conversation list: group by the other person
     const convMap = {};
@@ -57,7 +60,8 @@ router.get('/conversations', authenticate, async (req, res) => {
 
     res.json(conversations);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Conversations error:', err.message);
+    res.json([]);
   }
 });
 

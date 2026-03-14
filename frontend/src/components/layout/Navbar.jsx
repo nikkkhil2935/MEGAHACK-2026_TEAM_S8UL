@@ -110,7 +110,7 @@ export default function Navbar() {
         {/* Navigation Links */}
         <div className="flex-1 px-4 overflow-y-auto space-y-1">
           {links.map(({ to, icon: Icon, label }) => {
-            const isActive = location.pathname === to || (location.pathname.startsWith(to + '/') && to !== '/interview')
+            const isActive = location.pathname === to || (location.pathname.startsWith(to + '/') && to !== '/' && to !== '/interview' && to !== '/recruiter')
             return (
               <Link key={to} to={to} onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all ${
@@ -118,7 +118,7 @@ export default function Navbar() {
                     ? 'bg-black text-white dark:bg-white dark:text-black shadow-md' 
                     : 'text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-surface-800'
                 }`}>
-                <Icon size={20} className={isActive ? 'text-black' : ''} />
+                <Icon size={20} />
                 <span>{label}</span>
               </Link>
             )

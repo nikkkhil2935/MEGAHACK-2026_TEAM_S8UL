@@ -38,9 +38,13 @@ router.post('/upload', authenticate, upload.single('resume'), async (req, res) =
 
 // Get parsed profile
 router.get('/parsed', authenticate, async (req, res) => {
-  const { data } = await supabase.from('candidate_profiles')
-    .select('*').eq('user_id', req.user.id).single();
-  res.json(data);
+  try {
+    const { data } = await supabase.from('candidate_profiles')
+      .select('*').eq('user_id', req.user.id).maybeSingle();
+    res.json(data || null);
+  } catch (err) {
+    res.json(null);
+  }
 });
 
 // Update parsed data (manual edits)
@@ -55,7 +59,7 @@ router.put('/update', authenticate, async (req, res) => {
 // Get completeness score + tips
 router.get('/completeness', authenticate, async (req, res) => {
   const { data } = await supabase.from('candidate_profiles')
-    .select('parsed_data, completeness_score').eq('user_id', req.user.id).single();
+    .select('parsed_data, completeness_score').eq('user_id', req.user.id).maybeSingle();
 
   const tips = [];
   const p = data?.parsed_data || {};

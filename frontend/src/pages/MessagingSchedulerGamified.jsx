@@ -66,12 +66,13 @@ export default function MessagingSchedulerGamified() {
 
   // Poll for new messages every 5s
   useEffect(() => {
+    if (!user?.id) return
     pollRef.current = setInterval(() => {
       loadConversations()
       if (activeChat) loadMessages(activeChat, true)
     }, 5000)
     return () => clearInterval(pollRef.current)
-  }, [activeChat])
+  }, [activeChat, user?.id])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })

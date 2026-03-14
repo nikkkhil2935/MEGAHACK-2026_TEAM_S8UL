@@ -17,45 +17,59 @@ router.post('/careerfit', async (req, res) => {
       `JOB DESCRIPTION:\n${job_description}\n\nReturn JSON:\n{\n  "title": "inferred job title",\n  "skills_needed": ["skill1", "skill2", ...up to 10],\n  "experience_level": "Junior|Mid|Senior|Lead",\n  "key_responsibilities": ["resp1", "resp2", "resp3"],\n  "preparation_tips": ["tip1", "tip2", "tip3"],\n  "interview_topics": ["topic1", "topic2", "topic3"],\n  "career_fit_summary": "2-3 sentence summary of what kind of candidate would be ideal"\n}`
     );
     res.json(result);
-  } catch {
-    res.status(500).json({ error: 'Analysis failed' });
+  } catch (err) {
+    if (err.code === 'RATE_LIMITED') {
+      return res.status(429).json({ error: `AI service rate limited. Try again in ${err.retryAfterSec || 60} seconds.` });
+    }
+    console.error('CareerFit error:', err.message);
+    res.status(500).json({ error: 'Analysis failed. Please try again.' });
   }
 });
 
 // Job feed with live match scores
 router.get('/', authenticate, async (req, res) => {
-  const { category, remote, search, page = 1, limit = 20 } = req.query;
+  try {
+    const { category, remote, search, page = 1, limit = 20 } = req.query;
 
-  let query = supabase.from('job_postings').select('*').eq('is_active', true);
-  if (category) query = query.eq('job_category', category);
-  if (remote) query = query.eq('remote_policy', remote);
-  if (search) query = query.ilike('title', `%${search}%`);
-  query = query.range((+page - 1) * +limit, +page * +limit - 1).order('created_at', { ascending: false });
+    let query = supabase.from('job_postings').select('*').eq('is_active', true);
+    if (category) query = query.eq('job_category', category);
+    if (remote) query = query.eq('remote_policy', remote);
+    if (search) query = query.ilike('title', `%${search}%`);
+    query = query.range((+page - 1) * +limit, +page * +limit - 1).order('created_at', { ascending: false });
 
-  const { data: jobs } = await query;
+    const { data: jobs } = await query;
 
-  if (req.user.role === 'candidate') {
-    const { data: profile } = await supabase.from('candidate_profiles')
-      .select('parsed_data').eq('user_id', req.user.id).single();
+    if (req.user.role === 'candidate') {
+      const { data: profile } = await supabase.from('candidate_profiles')
+        .select('parsed_data').eq('user_id', req.user.id).maybeSingle();
 
-    if (profile?.parsed_data) {
-      const matches = await Promise.allSettled(
-        (jobs || []).map(j => matchCandidateToJob(profile.parsed_data, j.parsed_data || {})
-          .then(m => ({ ...j, match_score: m.match_score, verdict: m.verdict })))
-      );
-      return res.json(
-        matches.filter(r => r.status === 'fulfilled').map(r => r.value)
-      );
+      if (profile?.parsed_data) {
+        const matches = await Promise.allSettled(
+          (jobs || []).map(j => matchCandidateToJob(profile.parsed_data, j.parsed_data || {})
+            .then(m => ({ ...j, match_score: m.match_score, verdict: m.verdict })))
+        );
+        return res.json(
+          matches.filter(r => r.status === 'fulfilled').map(r => r.value)
+        );
+      }
     }
+    res.json(jobs || []);
+  } catch (err) {
+    console.error('Jobs feed error:', err.message);
+    res.json([]);
   }
-  res.json(jobs || []);
 });
 
 // Single job
 router.get('/:id', authenticate, async (req, res) => {
-  const { data } = await supabase.from('job_postings')
-    .select('*').eq('id', req.params.id).single();
-  res.json(data);
+  try {
+    const { data, error } = await supabase.from('job_postings')
+      .select('*').eq('id', req.params.id).single();
+    if (error || !data) return res.status(404).json({ error: 'Job not found' });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load job' });
+  }
 });
 
 // Create job posting (recruiter)
@@ -132,28 +146,38 @@ router.post('/:id/apply', authenticate, requireRole('candidate'), async (req, re
 
 // Match score for specific job
 router.get('/match/:id', authenticate, async (req, res) => {
-  const [{ data: job }, { data: profile }] = await Promise.all([
-    supabase.from('job_postings').select('*').eq('id', req.params.id).single(),
-    supabase.from('candidate_profiles').select('parsed_data').eq('user_id', req.user.id).single(),
-  ]);
+  try {
+    const [{ data: job }, { data: profile }] = await Promise.all([
+      supabase.from('job_postings').select('*').eq('id', req.params.id).single(),
+      supabase.from('candidate_profiles').select('parsed_data').eq('user_id', req.user.id).maybeSingle(),
+    ]);
 
-  const match = await matchCandidateToJob(profile?.parsed_data || {}, job?.parsed_data || {});
-  res.json(match);
+    const match = await matchCandidateToJob(profile?.parsed_data || {}, job?.parsed_data || {});
+    res.json(match);
+  } catch (err) {
+    console.error('Match score error:', err.message);
+    res.status(500).json({ error: 'Failed to calculate match' });
+  }
 });
 
 // Recruiter: my jobs with applicant counts
 router.get('/recruiter/my-jobs', authenticate, requireRole('recruiter'), async (req, res) => {
-  const { data: jobs } = await supabase.from('job_postings')
-    .select('*').eq('recruiter_id', req.user.id).order('created_at', { ascending: false });
+  try {
+    const { data: jobs } = await supabase.from('job_postings')
+      .select('*').eq('recruiter_id', req.user.id).order('created_at', { ascending: false });
 
-  // Get applicant counts
-  const enriched = await Promise.all((jobs || []).map(async (job) => {
-    const { count } = await supabase.from('applications')
-      .select('*', { count: 'exact', head: true }).eq('job_id', job.id);
-    return { ...job, applicant_count: count || 0 };
-  }));
+    // Get applicant counts
+    const enriched = await Promise.all((jobs || []).map(async (job) => {
+      const { count } = await supabase.from('applications')
+        .select('*', { count: 'exact', head: true }).eq('job_id', job.id);
+      return { ...job, applicant_count: count || 0 };
+    }));
 
-  res.json(enriched);
+    res.json(enriched);
+  } catch (err) {
+    console.error('Recruiter my-jobs error:', err.message);
+    res.json([]);
+  }
 });
 
 // Recruiter: get applicants for a job
@@ -196,10 +220,11 @@ router.get('/:id/applicants', authenticate, requireRole('recruiter'), async (req
 
 // Almost qualified (55-74%)
 router.get('/almost/qualified', authenticate, async (req, res) => {
-  const { data: profile } = await supabase.from('candidate_profiles')
-    .select('parsed_data').eq('user_id', req.user.id).single();
-  const { data: jobs } = await supabase.from('job_postings')
-    .select('*').eq('is_active', true).limit(40);
+  try {
+    const { data: profile } = await supabase.from('candidate_profiles')
+      .select('parsed_data').eq('user_id', req.user.id).maybeSingle();
+    const { data: jobs } = await supabase.from('job_postings')
+      .select('*').eq('is_active', true).limit(40);
 
   const results = await Promise.allSettled(
     (jobs || []).map(j => matchCandidateToJob(profile?.parsed_data || {}, j.parsed_data || {})
@@ -212,6 +237,10 @@ router.get('/almost/qualified', authenticate, async (req, res) => {
     .filter(j => j.match_score >= 55 && j.match_score < 75);
 
   res.json(almostQualified);
+  } catch (err) {
+    console.error('Almost qualified error:', err.message);
+    res.json([]);
+  }
 });
 
 // AI Shortlist: rank top candidates with reasons
