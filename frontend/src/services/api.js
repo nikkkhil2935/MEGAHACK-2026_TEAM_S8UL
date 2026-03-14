@@ -22,7 +22,7 @@ api.interceptors.response.use(
       localStorage.removeItem('careerbridge-auth')
       window.location.href = '/login'
     }
-    if (err.response?.status === 429) toast.error('Rate limit hit — wait 1 minute')
+    if (err.response?.status === 429 && !err.config?._skipRateLimitToast) toast.error('Rate limit hit — wait 1 minute')
     return Promise.reject(err)
   }
 )
