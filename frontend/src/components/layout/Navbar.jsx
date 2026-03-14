@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
 import { useThemeStore } from '../../store/theme'
+import Logo from '../common/Logo'
 import {
   LayoutDashboard,
   Briefcase,
@@ -73,7 +74,7 @@ export default function Navbar() {
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 bg-surface-900 border-b border-black/5 dark:border-white/5 h-16 w-full shrink-0 z-50">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-brand-500 flex items-center justify-center text-white text-xs font-bold shadow-lg">CB</div>
+          <Logo size="sm" />
           <span className="font-display font-semibold text-foreground">CareerBridge</span>
         </Link>
         <button onClick={() => setMobileOpen(o => !o)}
@@ -86,7 +87,7 @@ export default function Navbar() {
       <aside className={`fixed md:static inset-y-0 left-0 z-40 w-64 bg-surface-900 border-r border-black/5 dark:border-white/5 transform transition-transform duration-300 ease-in-out flex flex-col h-full ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="p-6">
           <Link to="/dashboard" className="flex items-center gap-3 mb-8">
-            <div className="w-8 h-8 rounded-xl bg-brand-500 flex items-center justify-center text-[#c1ff72] text-xs font-bold shadow-lg">CB</div>
+            <Logo size="sm" />
             <span className="font-display font-semibold text-foreground text-xl">CareerBridge</span>
           </Link>
 

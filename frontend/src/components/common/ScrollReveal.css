@@ -1,0 +1,19 @@
+.scroll-reveal {
+  margin: 20px 0;
+}
+
+.scroll-reveal-text {
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1.2;
+  font-weight: 500;
+  color: var(--color-foreground, #000);
+}
+
+.dark .scroll-reveal-text {
+  color: var(--color-foreground, #fff);
+}
+
+.word {
+  display: inline-block;
+  margin-right: 0.25em; /* adding space between words */
+}
