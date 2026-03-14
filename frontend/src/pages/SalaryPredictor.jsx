@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { DollarSign, TrendingUp, Award, MapPin } from 'lucide-react'
+import { DollarSign, TrendingUp, Award, MapPin, Cpu, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useGamificationStore } from '../store/gamification'
@@ -24,6 +24,7 @@ export default function SalaryPredictor() {
     employmentType: 'Full-time'
   })
   const [prediction, setPrediction] = useState(null)
+  const [modelPrediction, setModelPrediction] = useState(null)
   const [loading, setLoading] = useState(false)
   const { awardXP } = useGamificationStore()
 
@@ -36,6 +37,7 @@ export default function SalaryPredictor() {
     try {
       const { data } = await api.post('/salary/predict', form)
       setPrediction(data.prediction)
+      setModelPrediction(data.modelPrediction || null)
       toast.success('Salary prediction ready!')
       awardXP(25, 'Used Salary Predictor 💰')
     } catch (err) {
@@ -121,6 +123,69 @@ export default function SalaryPredictor() {
           {loading ? 'Analyzing market data...' : 'Predict My Salary Range'}
         </button>
       </div>
+
+      {/* Dual Model Comparison */}
+      {(prediction || modelPrediction) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="glass-card p-6 border-2 border-blue-500/20">
+            <div className="flex items-center gap-2 mb-4">
+              <Cpu className="w-4 h-4 text-blue-400" />
+              <span className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-xs font-bold uppercase tracking-wider">
+                Our ML Model
+              </span>
+            </div>
+            {modelPrediction ? (
+              <div className="text-center space-y-3">
+                <p className="text-3xl font-bold text-foreground">
+                  ${Number(modelPrediction.predictedSalaryUSD || 0).toLocaleString()}
+                </p>
+                <p className="text-sm text-foreground/60">Predicted Annual Salary (USD)</p>
+                <div className="text-left space-y-1 text-xs text-foreground/50 mt-4">
+                  <p>Experience: {modelPrediction.features_used?.experience_level}</p>
+                  <p>Type: {modelPrediction.features_used?.employment_type}</p>
+                  <p>Role: {modelPrediction.features_used?.job_title}</p>
+                  <p>Location: {modelPrediction.features_used?.company_location}</p>
+                  <p>Company Size: {modelPrediction.features_used?.company_size}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-foreground/40 italic">ML model unavailable</p>
+            )}
+          </div>
+          <div className="glass-card p-6 border-2 border-purple-500/20">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <span className="px-2 py-1 bg-purple-500/10 text-purple-400 rounded-lg text-xs font-bold uppercase tracking-wider">
+                Groq AI Analysis
+              </span>
+            </div>
+            {prediction ? (
+              <div className="text-center space-y-3">
+                <p className="text-3xl font-bold text-foreground">
+                  {formatSalary(prediction.salaryRange?.min, prediction.salaryRange?.currency)}
+                  {' — '}
+                  {formatSalary(prediction.salaryRange?.max, prediction.salaryRange?.currency)}
+                </p>
+                <p className="text-sm text-foreground/60">
+                  per annum · {prediction.salaryRange?.currency || 'USD'}
+                </p>
+                <div className="flex items-center justify-center gap-4 mt-2">
+                  <div className="text-center">
+                    <p className="text-lg font-bold">{prediction.confidenceScore}%</p>
+                    <p className="text-xs text-foreground/50">Confidence</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-bold">{prediction.marketDemand}</p>
+                    <p className="text-xs text-foreground/50">Demand</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-foreground/40 italic">AI analysis unavailable</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Results */}
       {prediction && (
