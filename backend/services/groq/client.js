@@ -80,6 +80,12 @@ async function groqJSON(systemPrompt, userContent, retries = 0) {
       throw new Error('Groq JSON parse failed: ' + text.slice(0, 200));
     }
   } catch (err) {
+    if (isInvalidKeyError(err)) {
+      console.error(`[Groq] Invalid API key (key #${keyIndex + 1})`);
+      const error = new Error('AI service unavailable — invalid API key. Please contact support.');
+      error.code = 'GROQ_INVALID_KEY';
+      throw error;
+    }
     if (err?.status === 429) {
       const delaySec = parseRetryDelay(err) || 60;
       markRateLimited(keyIndex, delaySec);
@@ -112,6 +118,12 @@ async function groqChat(messages, system = '', temp = 0.7, maxTokens = 2048) {
     });
     return res.choices[0].message.content.trim();
   } catch (err) {
+    if (isInvalidKeyError(err)) {
+      console.error(`[Groq] Invalid API key (key #${keyIndex + 1})`);
+      const error = new Error('AI service unavailable — invalid API key. Please contact support.');
+      error.code = 'GROQ_INVALID_KEY';
+      throw error;
+    }
     if (err?.status === 429) {
       const delaySec = parseRetryDelay(err) || 60;
       markRateLimited(keyIndex, delaySec);
@@ -130,18 +142,41 @@ async function groqChat(messages, system = '', temp = 0.7, maxTokens = 2048) {
 }
 
 async function transcribeAudio(audioBuffer, language = 'en') {
-  const { client } = getClient();
-  const file = new File([audioBuffer], 'audio.webm', { type: 'audio/webm' });
-  const res = await client.audio.transcriptions.create({
-    file,
-    model: WHISPER,
-    language,
-    response_format: 'json'
-  });
-  return res.text;
+  const { client, keyIndex } = getClient();
+  try {
+    const file = new File([audioBuffer], 'audio.webm', { type: 'audio/webm' });
+    const res = await client.audio.transcriptions.create({
+      file,
+      model: WHISPER,
+      language,
+      response_format: 'json'
+    });
+    return res.text;
+  } catch (err) {
+    if (isInvalidKeyError(err)) {
+      console.error(`[Groq] Invalid API key for transcription (key #${keyIndex + 1})`);
+      const error = new Error('AI service unavailable — invalid API key. Please contact support.');
+      error.code = 'GROQ_INVALID_KEY';
+      throw error;
+    }
+    throw err;
+  }
 }
 
 // ── Helpers ──
+
+function isInvalidKeyError(err) {
+  // Don't match our own re-thrown GROQ_INVALID_KEY errors
+  if (err?.code === 'GROQ_INVALID_KEY') return false;
+  const status = err?.status || err?.response?.status;
+  const code = err?.error?.error?.code || err?.error?.code || '';
+  const msg = err?.error?.error?.message || err?.error?.message || err?.message || '';
+  return (
+    (status === 401 && code === 'invalid_api_key') ||
+    code === 'invalid_api_key' ||
+    msg.toLowerCase().includes('invalid api key')
+  );
+}
 
 function parseRetryDelay(err) {
   const msg = err?.error?.message || err?.message || '';

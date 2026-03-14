@@ -30,6 +30,8 @@ router.post('/generate', authenticate, async (req, res) => {
     res.json({ roadmap: data, cached: false });
   } catch (err) {
     console.error('Roadmap generate error:', err.message);
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
+    if (err.code === 'RATE_LIMITED') return res.status(429).json({ error: `AI rate limit reached. Try again in ${err.retryAfterSec || 60} seconds.` });
     res.status(500).json({ error: 'Failed to generate roadmap' });
   }
 });

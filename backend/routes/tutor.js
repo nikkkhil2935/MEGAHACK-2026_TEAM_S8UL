@@ -72,6 +72,8 @@ router.post('/chat', authenticate, async (req, res) => {
     res.json({ reply });
   } catch (err) {
     console.error('Tutor chat error:', err.message);
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
+    if (err.code === 'RATE_LIMITED') return res.status(429).json({ error: `AI rate limit reached. Try again in ${err.retryAfterSec || 60} seconds.` });
     res.status(500).json({ error: 'Failed to get tutor response' });
   }
 });

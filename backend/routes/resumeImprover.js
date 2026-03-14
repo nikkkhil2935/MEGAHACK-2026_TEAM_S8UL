@@ -131,6 +131,7 @@ Perform a deep resume audit. Respond ONLY with a JSON object (no markdown, no ba
     res.json({ success: true, analysis, modelPrediction, rateLimitWarning });
   } catch (err) {
     console.error('Resume improver error:', err);
+    if (err?.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
     if (err?.code === 'RATE_LIMITED') {
       return res.status(429).json({
         error: `Rate limit reached. Please try again in ${err.retryAfterSec || 60} seconds.`,

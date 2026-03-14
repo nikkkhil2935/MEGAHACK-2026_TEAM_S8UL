@@ -69,6 +69,8 @@ router.post('/start', authenticate, async (req, res) => {
   res.json({ session_id: session.id, questions });
   } catch (err) {
     console.error('Interview start error:', err);
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
+    if (err.code === 'RATE_LIMITED') return res.status(429).json({ error: `AI rate limit reached. Please try again in ${err.retryAfterSec || 60} seconds.` });
     res.status(500).json({ error: 'Failed to start interview' });
   }
 });
@@ -104,6 +106,8 @@ router.post('/answer', authenticate, async (req, res) => {
     res.json({ evaluation, followup_question: followup });
   } catch (err) {
     console.error('Answer submission error:', err);
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
+    if (err.code === 'RATE_LIMITED') return res.status(429).json({ error: `AI rate limit reached. Please try again in ${err.retryAfterSec || 60} seconds.` });
     res.status(500).json({ error: 'Failed to submit answer' });
   }
 });
@@ -140,6 +144,8 @@ router.post('/answer/audio', authenticate, upload.single('audio'), async (req, r
     res.json({ transcript, evaluation, followup_question: followup });
   } catch (err) {
     console.error('Audio answer error:', err);
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
+    if (err.code === 'RATE_LIMITED') return res.status(429).json({ error: `AI rate limit reached. Please try again in ${err.retryAfterSec || 60} seconds.` });
     res.status(500).json({ error: 'Failed to submit audio answer' });
   }
 });
@@ -204,6 +210,8 @@ router.post('/end', authenticate, async (req, res) => {
     res.json({ report, session_id });
   } catch (err) {
     console.error('Interview end error:', err);
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
+    if (err.code === 'RATE_LIMITED') return res.status(429).json({ error: `AI rate limit reached. Please try again in ${err.retryAfterSec || 60} seconds.` });
     res.status(500).json({ error: 'Failed to end interview' });
   }
 });

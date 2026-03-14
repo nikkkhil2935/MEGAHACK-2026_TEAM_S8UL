@@ -32,6 +32,7 @@ router.post('/upload', authenticate, upload.single('resume'), async (req, res) =
     res.json({ parsed, resume_url: urlData.publicUrl });
   } catch (err) {
     console.error('Resume parse error:', err);
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
     res.status(500).json({ error: err.message });
   }
 });
@@ -92,8 +93,6 @@ router.post('/ab-test', authenticate, upload.fields([
     );
     res.json(result);
   } catch (err) {
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
     res.status(500).json({ error: err.message });
   }
-});
-
-module.exports = router;

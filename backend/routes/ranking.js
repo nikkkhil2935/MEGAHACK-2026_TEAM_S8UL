@@ -141,6 +141,8 @@ Sort the array by rank (1 = best). Mark top 3 as shortlist: true. Be honest abou
     res.json({ success: true, ranking, totalCandidates: ranking.length || enriched.length });
   } catch (err) {
     console.error('Ranking error:', err);
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
+    if (err.code === 'RATE_LIMITED') return res.status(429).json({ error: `AI rate limit reached. Try again in ${err.retryAfterSec || 60} seconds.` });
     res.status(500).json({ error: 'Failed to rank candidates' });
   }
 });

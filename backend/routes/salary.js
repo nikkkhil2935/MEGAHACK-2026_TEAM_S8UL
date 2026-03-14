@@ -146,6 +146,8 @@ Respond ONLY with a JSON object (no markdown, no backticks) in this exact struct
     res.json({ success: true, prediction, modelPrediction });
   } catch (err) {
     console.error('Salary predict error:', err);
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
+    if (err.code === 'RATE_LIMITED') return res.status(429).json({ error: `AI rate limit reached. Try again in ${err.retryAfterSec || 60} seconds.` });
     res.status(500).json({ error: 'Failed to predict salary' });
   }
 });

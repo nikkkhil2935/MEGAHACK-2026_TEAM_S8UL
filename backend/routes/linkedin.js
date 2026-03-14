@@ -43,6 +43,7 @@ If a field cannot be determined, use null or an empty array as appropriate.`,
 
   } catch (err) {
     console.error('Profile import error:', err);
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
     res.status(500).json({ error: err.message });
   }
 });

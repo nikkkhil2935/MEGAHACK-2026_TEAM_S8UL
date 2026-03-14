@@ -231,6 +231,7 @@ IMPORTANT for verifiedSkills:
     res.json({ success: true, analysis, modelPrediction, githubUsername });
   } catch (err) {
     console.error('GitHub analyze error:', err);
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
     if (err.message?.includes('404')) {
       return res.status(404).json({ error: 'GitHub user not found' });
     }

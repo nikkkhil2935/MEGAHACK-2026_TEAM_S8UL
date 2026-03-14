@@ -18,6 +18,7 @@ router.post('/careerfit', async (req, res) => {
     );
     res.json(result);
   } catch (err) {
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
     if (err.code === 'RATE_LIMITED') {
       return res.status(429).json({ error: `AI service rate limited. Try again in ${err.retryAfterSec || 60} seconds.` });
     }
@@ -99,6 +100,7 @@ Return JSON:
     res.json(data);
   } catch (err) {
     console.error('Create job error:', err);
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
     res.status(500).json({ error: 'Failed to create job posting' });
   }
 });
@@ -300,6 +302,7 @@ Return JSON:
 
     res.json(result);
   } catch (err) {
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable.' });
     res.status(500).json({ error: 'Shortlist generation failed' });
   }
 });
@@ -328,7 +331,8 @@ Return JSON:
 }`
     );
     res.json(result);
-  } catch {
+  } catch (err) {
+    if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable.' });
     res.status(500).json({ error: 'Health score failed' });
   }
 });
