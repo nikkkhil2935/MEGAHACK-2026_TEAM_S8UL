@@ -96,3 +96,6 @@ router.post('/ab-test', authenticate, upload.fields([
     if (err.code === 'GROQ_INVALID_KEY') return res.status(503).json({ error: 'AI service temporarily unavailable. Please try again later.' });
     res.status(500).json({ error: err.message });
   }
+});
+
+module.exports = router;
