@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/auth'
-import { useThemeStore } from '../../store/theme'
 import { getSocket } from '../../services/socket'
 import api from '../../services/api'
 import Logo from '../common/Logo'
@@ -18,10 +17,7 @@ import {
   BarChart3,
   Menu,
   X,
-  Sun,
-  Moon,
   MessageSquare,
-  Phone,
   DollarSign,
   FileText,
   Github,
@@ -89,7 +85,6 @@ function NotificationPanel({ notifications, onNotifClick, onMarkAllRead, timeAgo
 
 export default function Navbar() {
   const { user, logout } = useAuthStore()
-  const { theme, toggleTheme } = useThemeStore()
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -211,7 +206,7 @@ export default function Navbar() {
     { to: '/profile', icon: User, label: 'Profile' },
     { to: '/recruiter/post-job', icon: PlusCircle, label: 'Post Job' },
     { to: '/recruiter/analytics', icon: BarChart3, label: 'Analytics' },
-    { to: '/ai-calling', icon: Phone, label: 'AI Calls' },
+
     { to: '/messaging', icon: MessageSquare, label: 'Messages' },
     { to: '/jobs', icon: Briefcase, label: 'Browse Jobs' },
   ]
@@ -316,11 +311,6 @@ export default function Navbar() {
                 />
               )}
             </div>
-            <button onClick={toggleTheme}
-              className="p-3 rounded-xl bg-surface-100 dark:bg-surface-800 text-foreground-muted hover:text-foreground hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors cursor-pointer shadow-sm border border-gray-100 dark:border-white/5"
-              aria-label="Toggle theme">
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
             <button onClick={handleLogout}
               className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 font-medium hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors cursor-pointer shadow-sm border border-red-100 dark:border-red-500/10"
               aria-label="Logout">

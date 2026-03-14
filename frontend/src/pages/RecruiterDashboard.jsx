@@ -25,7 +25,7 @@ export default function RecruiterDashboard() {
     finally { setLoading(false) }
   }
 
-  // Simulated activity feed
+  // Derive activity feed from job data
   useEffect(() => {
     if (jobs.length > 0) {
       const recentActivity = jobs

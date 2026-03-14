@@ -14,7 +14,7 @@ function startMLService() {
   if (IS_PRODUCTION || mlProcess || mlStarting) return;
   mlStarting = true;
 
-  console.log('[ML] Auto-starting Python ML service...');
+  // Starting Python ML service
 
   const py = process.platform === 'win32' ? 'python' : 'python3';
   mlProcess = spawn(py, ['app.py'], {
@@ -24,11 +24,9 @@ function startMLService() {
 
   mlProcess.stdout.on('data', (data) => {
     const msg = data.toString().trim();
-    if (msg) console.log(`[ML] ${msg}`);
     if (msg.includes('Application startup complete') || msg.includes('Uvicorn running')) {
       mlReady = true;
       mlStarting = false;
-      console.log('[ML] Python ML service is ready on port 5001');
     }
   });
 

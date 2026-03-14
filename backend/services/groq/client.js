@@ -43,7 +43,7 @@ function markRateLimited(keyIndex, delaySec) {
   console.warn(`[Groq] Key #${keyIndex + 1}/${keys.length} rate limited for ${delaySec}s`);
 }
 
-console.log(`[Groq] Loaded ${keys.length} API key(s)`);
+// Groq initialized with key rotation
 
 // ── Core functions ──
 
@@ -92,7 +92,7 @@ async function groqJSON(systemPrompt, userContent, retries = 0) {
 
       // If there are other keys available, retry immediately with a different key
       if (clients.length > 1 && retries < clients.length) {
-        console.log(`[Groq] Switching to next key (attempt ${retries + 1}/${clients.length})`);
+        // Switching to next key
         return groqJSON(systemPrompt, userContent, retries + 1);
       }
 

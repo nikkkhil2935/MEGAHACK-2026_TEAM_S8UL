@@ -86,7 +86,7 @@ export function formatDateTime(date) {
 }
 
 /**
- * Get next available interview slot (mock)
+ * Get next available interview slot
  */
 export function getNextInterviewSlot() {
   const now = new Date();
@@ -97,18 +97,10 @@ export function getNextInterviewSlot() {
 }
 
 /**
- * Generate meeting link (for Jitsi, Google Meet, etc.)
+ * Generate meeting link via Jitsi (free, no auth required)
  */
-export function generateMeetingLink(type = 'jitsi') {
+export function generateMeetingLink() {
   const uuid = Math.random().toString(36).substring(2, 15) +
                Math.random().toString(36).substring(2, 15);
-
-  switch(type) {
-    case 'jitsi':
-      return `https://meet.jit.si/CareerBridge-${uuid}`;
-    case 'google':
-      return `https://meet.google.com/${uuid.substring(0, 21)}`; // Mock Google Meet link
-    default:
-      return `https://careerbridge.meet/${uuid}`;
-  }
+  return `https://meet.jit.si/CareerBridge-${uuid}`;
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mic, Brain, Target, Shield, Sparkles, ArrowRight, Loader2, FileText, Check, Trophy, Github, PhoneCall, TrendingUp, Play, Quote } from 'lucide-react'
+import { Mic, Brain, Target, Shield, Sparkles, ArrowRight, Loader2, FileText, Check, Trophy, Github, TrendingUp, Quote } from 'lucide-react'
 import Logo from '../components/common/Logo'
 import ScrollReveal from '../components/common/ScrollReveal'
 import ScrollVelocity from '../components/common/ScrollVelocity'
@@ -75,12 +75,11 @@ export default function Landing() {
       {/* Hero Section (Attio Style with Rolling Text) */}
       <section className="relative z-10 max-w-5xl mx-auto px-6 pt-28 pb-20 text-center">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface-100 dark:bg-surface-800 border border-black/5 dark:border-white/5 text-foreground text-xs font-bold mb-8 shadow-sm cursor-pointer hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface-100 dark:bg-surface-800 border border-black/5 dark:border-white/5 text-foreground text-xs font-bold mb-8 shadow-sm">
             <span className="flex items-center justify-center w-5 h-5 rounded-full bg-brand-500 text-black">
               <Sparkles size={10} />
             </span>
-            Meet CareerBridge 2.0
-            <ArrowRight size={14} className="ml-1 text-gray-400" />
+            CareerBridge AI — Powered by LLaMA 3.3
           </div>
 
           <h1 className="text-5xl md:text-7xl lg:text-[84px] font-display font-medium text-foreground leading-[1.1] mb-8 tracking-[-0.04em] flex flex-col items-center">
@@ -109,8 +108,8 @@ export default function Landing() {
             <Link to="/register" className="px-8 py-4 bg-black text-white dark:bg-white dark:text-black rounded-full text-base font-semibold shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all w-full sm:w-auto flex items-center justify-center">
               Start building for free
             </Link>
-            <button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="px-8 py-4 bg-white dark:bg-surface-900 text-foreground rounded-full text-base font-semibold shadow-sm hover:shadow-md hover:-translate-y-1 transition-all w-full sm:w-auto border border-black/5 dark:border-white/5 flex items-center justify-center gap-2 group">
-              <Play size={16} className="text-gray-400 group-hover:text-brand-500 transition-colors" /> Watch intro
+            <button onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })} className="px-8 py-4 bg-white dark:bg-surface-900 text-foreground rounded-full text-base font-semibold shadow-sm hover:shadow-md hover:-translate-y-1 transition-all w-full sm:w-auto border border-black/5 dark:border-white/5 flex items-center justify-center gap-2 group">
+              <ArrowRight size={16} className="text-gray-400 group-hover:text-brand-500 transition-colors" /> Explore features
             </button>
           </div>
         </motion.div>
@@ -143,7 +142,7 @@ export default function Landing() {
       </section>
 
       {/* Attio-Style Bento Grid */}
-      <section className="relative z-10 max-w-7xl mx-auto px-6 pb-32">
+      <section id="features-section" className="relative z-10 max-w-7xl mx-auto px-6 pb-32">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-display font-medium text-foreground tracking-tight mb-4">A complete toolkit.</h2>
           <p className="text-lg text-gray-500">Everything you need to showcase your skills and get hired.</p>

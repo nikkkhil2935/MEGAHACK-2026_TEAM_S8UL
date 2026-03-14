@@ -70,7 +70,6 @@ app.use('/api/notifications', require('./routes/notifications'));
 io.on('connection', (socket) => {
   socket.on('join_interview', (sessionId) => {
     socket.join(sessionId);
-    console.log(`Socket joined interview: ${sessionId}`);
   });
 
   // Messaging: user joins their own room to receive messages

@@ -23,8 +23,8 @@ export default function Dashboard() {
       try {
         const res = await api.get('/dashboard/candidate')
         setData(res.data)
-      } catch (err) {
-        console.error('Dashboard fetch error:', err)
+      } catch {
+        // Dashboard data unavailable
       } finally {
         setLoading(false)
       }

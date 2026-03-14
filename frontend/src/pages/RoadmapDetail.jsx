@@ -98,10 +98,8 @@ export default function RoadmapDetail() {
         currentWeek={currentWeek}
         completedWeeks={getCompletedWeeks()}
         onWeekSelect={(week) => {
-          if (week < currentWeek || getCompletedWeeks().includes(week)) {
-            window.scrollTo(0, 0);
-            // In a real app, this would navigate to that week
-          }
+          const el = document.getElementById(`roadmap-week-${week}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }}
       />
 
@@ -113,7 +111,7 @@ export default function RoadmapDetail() {
           const isFuture = week.week > currentWeek
 
           return (
-            <motion.div key={week.week} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            <motion.div key={week.week} id={`roadmap-week-${week.week}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: wi * 0.1 }}
               className={`bg-surface-800 border rounded-xl p-6 ${isActive ? 'border-brand-500/40' : 'border-white/5'} ${isFuture ? 'opacity-60' : ''}`}>
 

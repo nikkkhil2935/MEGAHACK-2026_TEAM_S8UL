@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MapPin, ArrowLeft, Send, Map, MessageSquare, DollarSign, Clock, Briefcase, ChevronDown, ChevronUp, Mic, Sparkles, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -9,10 +9,7 @@ import { useGamificationStore } from '../store/gamification'
 export default function JobDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const location = useLocation()
-  const mockJob = location.state?.mockJob
-  const isMock = id.startsWith('mock-')
-  const [job, setJob] = useState(mockJob || null)
+  const [job, setJob] = useState(null)
   const [match, setMatch] = useState(null)
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
@@ -22,16 +19,14 @@ export default function JobDetail() {
   const { awardXP } = useGamificationStore()
 
   useEffect(() => {
-    if (isMock) return
-    api.get(`/jobs/${id}`).then(r => setJob(r.data))
+    api.get(`/jobs/${id}`).then(r => setJob(r.data)).catch(() => {
+      toast.error('Job not found')
+      navigate('/jobs')
+    })
     api.get(`/jobs/match/${id}`).then(r => setMatch(r.data)).catch(() => {})
-  }, [id, isMock])
+  }, [id])
 
   const handleApply = async () => {
-    if (isMock) {
-      toast.error('This is a sample job. Real jobs will be available when a recruiter posts them.')
-      return
-    }
     setApplying(true)
     try {
       await api.post(`/jobs/${id}/apply`, { cover_letter: coverLetter || null })
@@ -53,10 +48,6 @@ export default function JobDetail() {
   }
 
   const handleMessageRecruiter = () => {
-    if (isMock) {
-      toast.error('Messaging is available for real job postings only.')
-      return
-    }
     if (job?.recruiter_id) {
       navigate(`/messaging?startChat=${job.recruiter_id}`)
     } else {
@@ -65,10 +56,6 @@ export default function JobDetail() {
   }
 
   const handleGenerateCoverLetter = async () => {
-    if (isMock) {
-      toast.error('AI generation is available for real job postings only.')
-      return
-    }
     setGeneratingCL(true)
     try {
       const { data } = await api.post('/jobs/generate-cover-letter', { job_id: id })
@@ -100,12 +87,6 @@ export default function JobDetail() {
         </Link>
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          {isMock && (
-            <div className="text-xs text-center text-gray-500 mb-4 bg-surface-800 border border-white/5 rounded-xl py-2.5">
-              This is a sample job listing for preview purposes.
-            </div>
-          )}
-
           {/* Header */}
           <div className="glass-card p-6 mb-5">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -280,7 +261,7 @@ export default function JobDetail() {
           <div className="glass-card p-6">
             <h3 className="text-foreground font-semibold mb-3">Job Description</h3>
             <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">
-              {job.description || `This is a sample listing for ${job.title} at ${job.company}. Full job descriptions will appear here for real job postings.`}
+              {job.description || 'No description provided.'}
             </p>
           </div>
         </motion.div>
