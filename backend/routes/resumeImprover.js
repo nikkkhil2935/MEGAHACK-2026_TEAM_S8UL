@@ -2,6 +2,7 @@ const router = require('express').Router();
 const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
 const { groqJSON } = require('../services/groq/client');
+const { callMLService } = require('../services/mlService');
 
 // POST /api/resume-improver/analyze
 router.post('/analyze', authenticate, async (req, res) => {
@@ -67,7 +68,37 @@ Perform a deep resume audit. Respond ONLY with a JSON object (no markdown, no ba
 }
 `;
 
-    const analysis = await groqJSON(systemPrompt, userContent);
+    // Extract features for ML model
+    const skillsCount = (p.skills || []).length;
+    const projectsCount = (p.projects || []).length;
+    const keywordsCount = skillsCount + (p.certifications || []).length;
+    const educationLevel = (() => {
+      const edu = (p.education || []).map(e => ((e.degree || e.level || '') + ' ' + (e.field || '')).toLowerCase());
+      for (const d of edu) {
+        if (d.includes('phd') || d.includes('doctorate')) return 3;
+        if (d.includes('master') || d.includes('ms ') || d.includes('mba') || d.includes('m.tech') || d.includes('m.s')) return 2;
+        if (d.includes('bachelor') || d.includes('bs ') || d.includes('b.tech') || d.includes('b.e') || d.includes('b.s')) return 1;
+      }
+      return 0;
+    })();
+
+    // Run ML model and Groq AI in parallel
+    const [mlResult, aiResult] = await Promise.allSettled([
+      callMLService('/predict/resume', {
+        skills_count: skillsCount,
+        projects_count: projectsCount,
+        education_level: educationLevel,
+        keywords_count: keywordsCount,
+      }),
+      groqJSON(systemPrompt, userContent),
+    ]);
+
+    const modelPrediction = mlResult.status === 'fulfilled' ? mlResult.value : null;
+    const analysis = aiResult.status === 'fulfilled' ? aiResult.value : null;
+
+    if (!analysis && !modelPrediction) {
+      throw new Error('Both AI and ML model failed');
+    }
 
     await supabase
       .from('resume_improvements')
@@ -81,7 +112,7 @@ Perform a deep resume audit. Respond ONLY with a JSON object (no markdown, no ba
         { onConflict: 'user_id' }
       );
 
-    res.json({ success: true, analysis });
+    res.json({ success: true, analysis, modelPrediction });
   } catch (err) {
     console.error('Resume improver error:', err);
     res.status(500).json({ error: 'Failed to analyze resume' });

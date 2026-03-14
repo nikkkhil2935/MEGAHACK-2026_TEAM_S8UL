@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FileText, CheckCircle, AlertCircle, AlertTriangle, Copy, Zap } from 'lucide-react'
+import { FileText, CheckCircle, AlertCircle, AlertTriangle, Copy, Zap, Cpu, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useGamificationStore } from '../store/gamification'
@@ -13,6 +13,7 @@ const SEVERITY_STYLES = {
 export default function ResumeImprover() {
   const [jd, setJd] = useState('')
   const [analysis, setAnalysis] = useState(null)
+  const [modelPrediction, setModelPrediction] = useState(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
   const { awardXP } = useGamificationStore()
@@ -30,6 +31,7 @@ export default function ResumeImprover() {
     try {
       const { data } = await api.post('/resume-improver/analyze', { jobDescription: jd })
       setAnalysis(data.analysis)
+      setModelPrediction(data.modelPrediction || null)
       toast.success('Resume analysis complete!')
       awardXP(30, 'Improved your Resume 📄')
     } catch (err) {
@@ -80,18 +82,79 @@ export default function ResumeImprover() {
         </button>
       </div>
 
-      {analysis && (
+      {(analysis || modelPrediction) && (
         <>
-          {/* Scores overview */}
-          <div className="glass-card p-6">
-            <div className="flex flex-wrap items-center justify-around gap-4">
-              <ScoreGauge score={analysis.overallScore} label="Overall Score" />
-              <ScoreGauge score={analysis.atsScore} label="ATS Score" />
-              {Object.entries(analysis.sectionScores || {}).map(([k, v]) => (
-                <ScoreGauge key={k} score={v} label={k.charAt(0).toUpperCase() + k.slice(1)} />
-              ))}
+          {/* Dual Model Comparison */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="glass-card p-6 border-2 border-blue-500/20">
+              <div className="flex items-center gap-2 mb-4">
+                <Cpu className="w-4 h-4 text-blue-400" />
+                <span className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-xs font-bold uppercase tracking-wider">
+                  Our ML Model
+                </span>
+              </div>
+              {modelPrediction ? (
+                <div className="text-center space-y-3">
+                  <p className={`text-4xl font-bold ${modelPrediction.resumeQualityScore >= 70 ? 'text-green-500' : modelPrediction.resumeQualityScore >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>
+                    {modelPrediction.resumeQualityScore}
+                  </p>
+                  <p className="text-sm text-foreground/60">Resume Quality Score</p>
+                  <div className="text-left space-y-1 text-xs text-foreground/50 mt-4">
+                    <p>Skills detected: {modelPrediction.features_used?.skills_count}</p>
+                    <p>Projects found: {modelPrediction.features_used?.projects_count}</p>
+                    <p>Education level: {['High School', 'Bachelors', 'Masters', 'PhD'][modelPrediction.features_used?.education_level] || 'N/A'}</p>
+                    <p>Keywords count: {modelPrediction.features_used?.keywords_count}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-foreground/40 italic">ML model unavailable</p>
+              )}
+            </div>
+            <div className="glass-card p-6 border-2 border-purple-500/20">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-purple-400" />
+                <span className="px-2 py-1 bg-purple-500/10 text-purple-400 rounded-lg text-xs font-bold uppercase tracking-wider">
+                  Groq AI Analysis
+                </span>
+              </div>
+              {analysis ? (
+                <div className="text-center space-y-3">
+                  <div className="flex items-center justify-around">
+                    <div>
+                      <p className={`text-4xl font-bold ${analysis.overallScore >= 70 ? 'text-green-500' : analysis.overallScore >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>
+                        {analysis.overallScore}
+                      </p>
+                      <p className="text-xs text-foreground/60">Overall</p>
+                    </div>
+                    <div>
+                      <p className={`text-4xl font-bold ${analysis.atsScore >= 70 ? 'text-green-500' : analysis.atsScore >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>
+                        {analysis.atsScore}
+                      </p>
+                      <p className="text-xs text-foreground/60">ATS Score</p>
+                    </div>
+                  </div>
+                  <div className="text-left space-y-1 text-xs text-foreground/50 mt-2">
+                    <p>Issues found: {(analysis.issues || []).length}</p>
+                    <p>Quick wins: {(analysis.quickWins || []).length}</p>
+                    <p>Missing keywords: {(analysis.missingKeywords || []).length}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-foreground/40 italic">AI analysis unavailable</p>
+              )}
             </div>
           </div>
+
+          {/* Detailed Scores (from AI) */}
+          {analysis && (
+            <div className="glass-card p-6">
+              <div className="flex flex-wrap items-center justify-around gap-4">
+                {Object.entries(analysis.sectionScores || {}).map(([k, v]) => (
+                  <ScoreGauge key={k} score={v} label={k.charAt(0).toUpperCase() + k.slice(1)} />
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="flex gap-2 flex-wrap">

@@ -2,6 +2,7 @@ const router = require('express').Router();
 const supabase = require('../db/supabase');
 const { authenticate } = require('../middleware/auth');
 const { groqJSON } = require('../services/groq/client');
+const { callMLService } = require('../services/mlService');
 
 const GH_API = 'https://api.github.com';
 
@@ -101,7 +102,28 @@ router.post('/analyze', authenticate, async (req, res) => {
       })
     );
 
-    // 4. AI analysis via Groq
+    // 4. Aggregate features for ML model
+    const totalStars = repoDetails.reduce((s, r) => s + (r.stars || 0), 0);
+    const totalForks = repoDetails.reduce((s, r) => s + (r.forks || 0), 0);
+    const totalIssues = repoDetails.reduce((s, r) => s + (r.openIssues || 0), 0);
+    const avgReadmeLen = Math.round(
+      repoDetails.reduce((s, r) => s + (r.readme?.length || 0), 0) / (repoDetails.length || 1)
+    );
+
+    // Estimate commit count from top repos
+    let totalCommits = 0;
+    await Promise.all(
+      scored.slice(0, 6).map(async (repo) => {
+        try {
+          const commits = await ghFetch(
+            `/repos/${githubUsername}/${repo.name}/commits?per_page=100`
+          );
+          totalCommits += Array.isArray(commits) ? commits.length : 0;
+        } catch { /* ignore */ }
+      })
+    );
+
+    // 5. AI analysis via Groq + ML model in parallel
     const systemPrompt =
       'You are a senior software engineer and open source contributor reviewing a developer\'s GitHub portfolio. You also verify claimed skills against actual code evidence.';
 
@@ -175,7 +197,24 @@ IMPORTANT for verifiedSkills:
 - Also include any skills found in repos that are NOT in the claimed list with verified: true
 `;
 
-    const analysis = await groqJSON(systemPrompt, userContent);
+    // Run ML model and Groq AI in parallel
+    const [mlResult, aiResult] = await Promise.allSettled([
+      callMLService('/predict/github', {
+        stars: totalStars,
+        forks: totalForks,
+        commits: totalCommits,
+        issues: totalIssues,
+        readme_length: avgReadmeLen,
+      }),
+      groqJSON(systemPrompt, userContent),
+    ]);
+
+    const modelPrediction = mlResult.status === 'fulfilled' ? mlResult.value : null;
+    const analysis = aiResult.status === 'fulfilled' ? aiResult.value : null;
+
+    if (!analysis && !modelPrediction) {
+      throw new Error('Both AI and ML model failed');
+    }
 
     await supabase
       .from('github_analyses')
@@ -183,13 +222,13 @@ IMPORTANT for verifiedSkills:
         {
           user_id: req.user.id,
           github_username: githubUsername,
-          analysis,
+          analysis: analysis || {},
           analyzed_at: new Date().toISOString(),
         },
         { onConflict: 'user_id' }
       );
 
-    res.json({ success: true, analysis, githubUsername });
+    res.json({ success: true, analysis, modelPrediction, githubUsername });
   } catch (err) {
     console.error('GitHub analyze error:', err);
     if (err.message?.includes('404')) {

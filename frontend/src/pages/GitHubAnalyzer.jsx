@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Github, Star, GitFork, ExternalLink, Trophy, AlertCircle, Zap, CheckCircle, XCircle, Shield } from 'lucide-react'
+import { Github, Star, GitFork, ExternalLink, Trophy, AlertCircle, Zap, CheckCircle, XCircle, Shield, Cpu, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useGamificationStore } from '../store/gamification'
@@ -18,6 +18,7 @@ export default function GitHubAnalyzer() {
   const [loading, setLoading] = useState(false)
   const [merging, setMerging] = useState(false)
   const [activeRepo, setActiveRepo] = useState(null)
+  const [modelPrediction, setModelPrediction] = useState(null)
   const { awardXP } = useGamificationStore()
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function GitHubAnalyzer() {
       const { data } = await api.post('/github/analyze', { githubUsername: username.trim() })
       setAnalysis(data.analysis)
       setGithubUsername(data.githubUsername)
+      setModelPrediction(data.modelPrediction || null)
       toast.success('GitHub portfolio analyzed!')
       awardXP(30, 'GitHub Profile Analyzed 🚀')
     } catch (err) {
@@ -119,26 +121,67 @@ export default function GitHubAnalyzer() {
         )}
       </div>
 
-      {analysis && (
+      {(analysis || modelPrediction) && (
         <div className="space-y-6">
-          {/* Portfolio Score */}
-          <div className="glass-card p-6">
-            <div className="flex flex-wrap items-center justify-around gap-6">
-              <div className="text-center">
-                <ScoreRing score={analysis.portfolioScore} />
-                <p className="text-sm font-semibold text-foreground mt-1">Portfolio Score</p>
+          {/* Dual Model Comparison */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="glass-card p-6 border-2 border-blue-500/20">
+              <div className="flex items-center gap-2 mb-4">
+                <Cpu className="w-4 h-4 text-blue-400" />
+                <span className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-xs font-bold uppercase tracking-wider">
+                  Our ML Model
+                </span>
               </div>
-              <div className="text-center">
-                <ScoreRing score={analysis.profileCompleteness} />
-                <p className="text-sm font-semibold text-foreground mt-1">Profile Completeness</p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Github className="w-4 h-4 text-foreground/60" />
-                  <span className="text-sm text-foreground">
-                    {analysis.totalPublicRepos} public repos
-                  </span>
+              {modelPrediction ? (
+                <div className="text-center space-y-3">
+                  <ScoreRing score={Math.round(modelPrediction.projectQualityScore)} />
+                  <p className="text-sm font-semibold text-foreground">Project Quality Score</p>
+                  <div className="text-left space-y-1 text-xs text-foreground/50 mt-2">
+                    <p>Total Stars: {modelPrediction.features_used?.stars}</p>
+                    <p>Total Forks: {modelPrediction.features_used?.forks}</p>
+                    <p>Commits analyzed: {modelPrediction.features_used?.commits}</p>
+                    <p>Open Issues: {modelPrediction.features_used?.issues}</p>
+                    <p>Avg README length: {modelPrediction.features_used?.readme_length} chars</p>
+                  </div>
                 </div>
+              ) : (
+                <p className="text-sm text-foreground/40 italic">ML model unavailable</p>
+              )}
+            </div>
+            <div className="glass-card p-6 border-2 border-purple-500/20">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-purple-400" />
+                <span className="px-2 py-1 bg-purple-500/10 text-purple-400 rounded-lg text-xs font-bold uppercase tracking-wider">
+                  Groq AI Analysis
+                </span>
+              </div>
+              {analysis ? (
+                <div className="text-center space-y-2">
+                  <div className="flex items-center justify-around">
+                    <div>
+                      <ScoreRing score={analysis.portfolioScore} />
+                      <p className="text-xs font-semibold mt-1">Portfolio Score</p>
+                    </div>
+                    <div>
+                      <ScoreRing score={analysis.profileCompleteness} />
+                      <p className="text-xs font-semibold mt-1">Completeness</p>
+                    </div>
+                  </div>
+                  <div className="text-left space-y-1 text-xs text-foreground/50 mt-2">
+                    <p>Public repos: {analysis.totalPublicRepos}</p>
+                    <p>Languages: {(analysis.languageDiversity || []).join(', ')}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-foreground/40 italic">AI analysis unavailable</p>
+              )}
+            </div>
+          </div>
+
+          {/* Merge + Language Tags */}
+          {analysis && (
+            <div className="glass-card p-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap gap-1">
                   {(analysis.languageDiversity || []).map(lang => (
                     <span
@@ -149,19 +192,19 @@ export default function GitHubAnalyzer() {
                     </span>
                   ))}
                 </div>
+                <button
+                  className="btn-primary flex items-center gap-2"
+                  onClick={handleMergeProjects}
+                  disabled={merging}
+                >
+                  {merging ? 'Merging...' : '🔗 Merge into Profile'}
+                </button>
               </div>
-              <button
-                className="btn-primary flex items-center gap-2"
-                onClick={handleMergeProjects}
-                disabled={merging}
-              >
-                {merging ? 'Merging...' : '🔗 Merge into Profile'}
-              </button>
             </div>
-          </div>
+          )}
 
           {/* Best repo highlight */}
-          {analysis.bestRepoToHighlight && (
+          {analysis?.bestRepoToHighlight && (
             <div className="glass-card p-5 border border-foreground/20 flex items-start gap-3">
               <Trophy className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
               <div>
@@ -174,7 +217,7 @@ export default function GitHubAnalyzer() {
           )}
 
           {/* GitHub Verified Skills */}
-          {analysis.verifiedSkills?.length > 0 && (
+          {analysis?.verifiedSkills?.length > 0 && (
             <div className="glass-card p-5">
               <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-green-400" /> GitHub Verified Skills
@@ -222,6 +265,7 @@ export default function GitHubAnalyzer() {
           )}
 
           {/* Repository Cards */}
+          {analysis && (
           <div>
             <h2 className="text-lg font-semibold text-foreground mb-4">Repository Analysis</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -309,8 +353,10 @@ export default function GitHubAnalyzer() {
               ))}
             </div>
           </div>
+          )}
 
           {/* Portfolio Gaps */}
+          {analysis && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="glass-card p-5">
               <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -337,6 +383,7 @@ export default function GitHubAnalyzer() {
               </ol>
             </div>
           </div>
+          )}
         </div>
       )}
     </div>
