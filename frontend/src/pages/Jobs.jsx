@@ -100,7 +100,8 @@ export default function Jobs() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}>
-                <Link to={job.id.startsWith('mock-') ? '#' : `/jobs/${job.id}`}
+                <Link to={`/jobs/${job.id}`}
+                     state={job.id.startsWith('mock-') ? { mockJob: job } : undefined}
                   className="glass-card p-5 block hover:border-brand-500/20 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

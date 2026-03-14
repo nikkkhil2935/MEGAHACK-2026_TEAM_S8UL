@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { MapPin, ArrowLeft, Send, Map } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -9,17 +9,25 @@ import { useGamificationStore } from '../store/gamification'
 export default function JobDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [job, setJob] = useState(null)
+  const location = useLocation()
+  const mockJob = location.state?.mockJob
+  const isMock = id.startsWith('mock-')
+  const [job, setJob] = useState(mockJob || null)
   const [match, setMatch] = useState(null)
   const [applying, setApplying] = useState(false)
   const { awardXP } = useGamificationStore()
 
   useEffect(() => {
+    if (isMock) return
     api.get(`/jobs/${id}`).then(r => setJob(r.data))
     api.get(`/jobs/match/${id}`).then(r => setMatch(r.data)).catch(() => {})
-  }, [id])
+  }, [id, isMock])
 
   const handleApply = async () => {
+    if (isMock) {
+      toast.error('This is a sample job. Real jobs will be available when a recruiter posts them.')
+      return
+    }
     setApplying(true)
     try {
       await api.post(`/jobs/${id}/apply`)
@@ -48,6 +56,11 @@ export default function JobDetail() {
         </Link>
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+          {isMock && (
+            <div className="text-xs text-center text-gray-500 mb-4 bg-surface-800 border border-white/5 rounded-xl py-2.5">
+              This is a sample job listing for preview purposes.
+            </div>
+          )}
           {/* Header */}
           <div className="glass-card p-6 mb-5">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -115,7 +128,9 @@ export default function JobDetail() {
           {/* Description */}
           <div className="glass-card p-6">
             <h3 className="text-foreground font-semibold mb-3">Job Description</h3>
-            <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">{job.description}</p>
+            <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">
+              {job.description || `This is a sample listing for ${job.title} at ${job.company}. Full job descriptions will appear here for real job postings.`}
+            </p>
           </div>
         </motion.div>
       </div>

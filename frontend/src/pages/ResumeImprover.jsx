@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { FileText, CheckCircle, AlertCircle, AlertTriangle, Copy, Zap, Cpu, Sparkles } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { FileText, CheckCircle, AlertCircle, AlertTriangle, Copy, Zap, Cpu, Sparkles, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useGamificationStore } from '../store/gamification'
@@ -16,7 +16,28 @@ export default function ResumeImprover() {
   const [modelPrediction, setModelPrediction] = useState(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
+  const [cooldown, setCooldown] = useState(0)
+  const cooldownRef = useRef(null)
   const { awardXP } = useGamificationStore()
+
+  useEffect(() => {
+    return () => { if (cooldownRef.current) clearInterval(cooldownRef.current) }
+  }, [])
+
+  const startCooldown = useCallback((seconds) => {
+    setCooldown(seconds)
+    if (cooldownRef.current) clearInterval(cooldownRef.current)
+    cooldownRef.current = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current)
+          cooldownRef.current = null
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }, [])
 
   useEffect(() => {
     api.get('/resume-improver/latest')
@@ -27,16 +48,28 @@ export default function ResumeImprover() {
   }, [])
 
   const handleAnalyze = async () => {
+    if (cooldown > 0) return
     setLoading(true)
     try {
       const { data } = await api.post('/resume-improver/analyze', { jobDescription: jd })
       setAnalysis(data.analysis)
       setModelPrediction(data.modelPrediction || null)
-      toast.success('Resume analysis complete!')
+      if (data.rateLimitWarning) {
+        toast.error(data.rateLimitWarning, { duration: 5000 })
+      } else {
+        toast.success('Resume analysis complete!')
+      }
       awardXP(30, 'Improved your Resume 📄')
     } catch (err) {
-      const msg = err.response?.data?.error || 'Analysis failed. Make sure your profile is complete.'
-      toast.error(msg)
+      const status = err.response?.status
+      const retryAfter = err.response?.data?.retryAfterSec
+      if (status === 429 && retryAfter) {
+        startCooldown(retryAfter)
+        toast.error(`Rate limit hit. Please wait ${retryAfter}s before trying again.`, { duration: 6000 })
+      } else {
+        const msg = err.response?.data?.error || 'Analysis failed. Make sure your profile is complete.'
+        toast.error(msg)
+      }
     } finally {
       setLoading(false)
     }
@@ -77,8 +110,8 @@ export default function ResumeImprover() {
           value={jd}
           onChange={e => setJd(e.target.value)}
         />
-        <button className="btn-primary w-full py-3" onClick={handleAnalyze} disabled={loading}>
-          {loading ? 'Analyzing your resume...' : '🔍 Analyze & Improve My Resume'}
+        <button className="btn-primary w-full py-3" onClick={handleAnalyze} disabled={loading || cooldown > 0}>
+          {loading ? 'Analyzing your resume...' : cooldown > 0 ? `Rate limited — retry in ${cooldown}s` : '🔍 Analyze & Improve My Resume'}
         </button>
       </div>
 
@@ -140,7 +173,9 @@ export default function ResumeImprover() {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-foreground/40 italic">AI analysis unavailable</p>
+              <p className="text-sm text-foreground/40 italic">
+                {cooldown > 0 ? `AI analysis rate limited — retry in ${cooldown}s` : 'AI analysis unavailable'}
+              </p>
               )}
             </div>
           </div>
@@ -177,7 +212,7 @@ export default function ResumeImprover() {
           </div>
 
           {/* Tab: Issues */}
-          {activeTab === 'issues' && (
+          {activeTab === 'issues' && (analysis ? (
             <div className="space-y-3">
               {(analysis.issues || []).map((issue, i) => {
                 const { icon: Icon, color, bg } = SEVERITY_STYLES[issue.severity] || SEVERITY_STYLES.moderate
@@ -196,10 +231,20 @@ export default function ResumeImprover() {
                 )
               })}
             </div>
-          )}
+          ) : (
+            <div className="glass-card p-5 text-center text-sm">
+              {cooldown > 0 ? (
+                <p className="text-yellow-500 flex items-center justify-center gap-2">
+                  <Clock className="w-4 h-4" /> Rate limited — retry in {cooldown}s
+                </p>
+              ) : (
+                <p className="text-foreground/50">Groq AI analysis unavailable. Try analyzing again.</p>
+              )}
+            </div>
+          ))}
 
           {/* Tab: Overview — Improved Summary */}
-          {activeTab === 'overview' && (
+          {activeTab === 'overview' && (analysis ? (
             <div className="space-y-4">
               <div className="glass-card p-5">
                 <div className="flex justify-between items-center mb-3">
@@ -229,10 +274,20 @@ export default function ResumeImprover() {
                 </div>
               </div>
             </div>
-          )}
+          ) : (
+            <div className="glass-card p-5 text-center text-sm">
+              {cooldown > 0 ? (
+                <p className="text-yellow-500 flex items-center justify-center gap-2">
+                  <Clock className="w-4 h-4" /> Rate limited — retry in {cooldown}s
+                </p>
+              ) : (
+                <p className="text-foreground/50">Groq AI analysis unavailable. Try analyzing again.</p>
+              )}
+            </div>
+          ))}
 
           {/* Tab: Rewrites */}
-          {activeTab === 'rewrites' && (
+          {activeTab === 'rewrites' && (analysis ? (
             <div className="space-y-4">
               {(analysis.experienceImprovements || []).map((item, i) => (
                 <div key={i} className="glass-card p-5 space-y-3">
@@ -256,10 +311,20 @@ export default function ResumeImprover() {
                 </div>
               ))}
             </div>
-          )}
+          ) : (
+            <div className="glass-card p-5 text-center text-sm">
+              {cooldown > 0 ? (
+                <p className="text-yellow-500 flex items-center justify-center gap-2">
+                  <Clock className="w-4 h-4" /> Rate limited — retry in {cooldown}s
+                </p>
+              ) : (
+                <p className="text-foreground/50">Groq AI analysis unavailable. Try analyzing again.</p>
+              )}
+            </div>
+          ))}
 
           {/* Tab: ATS */}
-          {activeTab === 'ats' && (
+          {activeTab === 'ats' && (analysis ? (
             <div className="space-y-4">
               <div className="glass-card p-5">
                 <h3 className="font-semibold text-foreground mb-3">🔴 Missing Keywords</h3>
@@ -285,10 +350,20 @@ export default function ResumeImprover() {
                 </ul>
               </div>
             </div>
-          )}
+          ) : (
+            <div className="glass-card p-5 text-center text-sm">
+              {cooldown > 0 ? (
+                <p className="text-yellow-500 flex items-center justify-center gap-2">
+                  <Clock className="w-4 h-4" /> Rate limited — retry in {cooldown}s
+                </p>
+              ) : (
+                <p className="text-foreground/50">Groq AI analysis unavailable. Try analyzing again.</p>
+              )}
+            </div>
+          ))}
 
           {/* Tab: Quick Wins */}
-          {activeTab === 'quickwins' && (
+          {activeTab === 'quickwins' && (analysis ? (
             <div className="glass-card p-5">
               <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
                 <Zap className="w-4 h-4" /> Quick Wins — Do These First
@@ -304,7 +379,17 @@ export default function ResumeImprover() {
                 ))}
               </ol>
             </div>
-          )}
+          ) : (
+            <div className="glass-card p-5 text-center text-sm">
+              {cooldown > 0 ? (
+                <p className="text-yellow-500 flex items-center justify-center gap-2">
+                  <Clock className="w-4 h-4" /> Rate limited — retry in {cooldown}s
+                </p>
+              ) : (
+                <p className="text-foreground/50">Groq AI analysis unavailable. Try analyzing again.</p>
+              )}
+            </div>
+          ))}
         </>
       )}
     </div>

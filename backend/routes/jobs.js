@@ -86,32 +86,48 @@ Return JSON:
 
 // Apply
 router.post('/:id/apply', authenticate, requireRole('candidate'), async (req, res) => {
-  const [{ data: job }, { data: profile }] = await Promise.all([
-    supabase.from('job_postings').select('*').eq('id', req.params.id).single(),
-    supabase.from('candidate_profiles').select('parsed_data').eq('user_id', req.user.id).single(),
-  ]);
+  try {
+    const [{ data: job, error: jobErr }, { data: profile }] = await Promise.all([
+      supabase.from('job_postings').select('*').eq('id', req.params.id).single(),
+      supabase.from('candidate_profiles').select('parsed_data').eq('user_id', req.user.id).single(),
+    ]);
 
-  const match = await matchCandidateToJob(profile?.parsed_data || {}, job.parsed_data || {});
+    if (jobErr || !job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
 
-  const { data } = await supabase.from('applications').insert({
-    candidate_id: req.user.id, job_id: req.params.id,
-    match_score: match.match_score, match_data: match,
-    cover_letter: req.body.cover_letter,
-  }).select().single();
+    const match = await matchCandidateToJob(profile?.parsed_data || {}, job.parsed_data || {});
 
-  // Emit real-time activity
-  const io = req.app.get('io');
-  if (io) {
-    const { data: profile } = await supabase.from('profiles')
-      .select('full_name').eq('id', req.user.id).single();
-    io.emit('new_application', {
-      candidate_name: profile?.full_name || 'Someone',
-      job_title: job.title,
-      time: new Date().toISOString()
-    });
+    const { data, error: insertErr } = await supabase.from('applications').insert({
+      candidate_id: req.user.id, job_id: req.params.id,
+      match_score: match.match_score, match_data: match,
+      cover_letter: req.body?.cover_letter || null,
+    }).select().single();
+
+    if (insertErr) {
+      if (insertErr.code === '23505') {
+        return res.status(409).json({ error: 'You have already applied to this job' });
+      }
+      throw insertErr;
+    }
+
+    // Emit real-time activity
+    const io = req.app.get('io');
+    if (io) {
+      const { data: userProfile } = await supabase.from('profiles')
+        .select('full_name').eq('id', req.user.id).single();
+      io.emit('new_application', {
+        candidate_name: userProfile?.full_name || 'Someone',
+        job_title: job.title,
+        time: new Date().toISOString()
+      });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error('Apply error:', err);
+    res.status(500).json({ error: 'Failed to submit application' });
   }
-
-  res.json(data);
 });
 
 // Match score for specific job

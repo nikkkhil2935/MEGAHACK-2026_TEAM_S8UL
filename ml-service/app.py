@@ -15,15 +15,26 @@ from encoders import (
 )
 
 app = FastAPI(title="CareerBridge ML Service")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ml-service")
 
-# Load models from project root (one level up from ml-service/)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Load models — check local models/ dir first (production), then project root (local dev)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+if not os.path.exists(os.path.join(MODELS_DIR, "github_project_analyzer.pkl")):
+    MODELS_DIR = os.path.dirname(BASE_DIR)  # fallback to project root
 
-github_model = joblib.load(os.path.join(BASE_DIR, "github_project_analyzer.pkl"))
-salary_model = joblib.load(os.path.join(BASE_DIR, "salary_prediction_model.pkl"))
-resume_model = joblib.load(os.path.join(BASE_DIR, "resume_improver_model.pkl"))
+github_model = joblib.load(os.path.join(MODELS_DIR, "github_project_analyzer.pkl"))
+salary_model = joblib.load(os.path.join(MODELS_DIR, "salary_prediction_model.pkl"))
+resume_model = joblib.load(os.path.join(MODELS_DIR, "resume_improver_model.pkl"))
 
 logger.info("All 3 ML models loaded successfully.")
 
@@ -81,21 +92,28 @@ def predict_github(req: GitHubRequest):
 @app.post("/predict/salary")
 def predict_salary(req: SalaryRequest):
     try:
-        exp = EXPERIENCE_LEVEL_MAP.get(req.experience_level)
-        emp = EMPLOYMENT_TYPE_MAP.get(req.employment_type)
+        exp = EXPERIENCE_LEVEL_MAP.get(req.experience_level, 0)
+        emp = EMPLOYMENT_TYPE_MAP.get(req.employment_type, 2)  # default FT
+        loc = COMPANY_LOCATION_MAP.get(req.company_location, 50)  # default US
+        size = COMPANY_SIZE_MAP.get(req.company_size, 1)  # default M
+
+        # Fuzzy match job title: try exact, then case-insensitive, then default to Software Engineer
         job = JOB_TITLE_MAP.get(req.job_title)
-        loc = COMPANY_LOCATION_MAP.get(req.company_location)
-        size = COMPANY_SIZE_MAP.get(req.company_size)
-
-        missing = []
-        if exp is None: missing.append(f"experience_level: '{req.experience_level}'")
-        if emp is None: missing.append(f"employment_type: '{req.employment_type}'")
-        if job is None: missing.append(f"job_title: '{req.job_title}'")
-        if loc is None: missing.append(f"company_location: '{req.company_location}'")
-        if size is None: missing.append(f"company_size: '{req.company_size}'")
-
-        if missing:
-            raise HTTPException(status_code=422, detail=f"Unknown categories: {', '.join(missing)}")
+        if job is None:
+            lower_title = req.job_title.lower()
+            for key, val in JOB_TITLE_MAP.items():
+                if key.lower() == lower_title:
+                    job = val
+                    break
+            if job is None:
+                # Partial match: if any key contains the search term or vice versa
+                for key, val in JOB_TITLE_MAP.items():
+                    if lower_title in key.lower() or key.lower() in lower_title:
+                        job = val
+                        break
+            if job is None:
+                job = JOB_TITLE_MAP.get("Software Engineer", 46)
+                logger.info(f"Job title '{req.job_title}' not found, defaulting to Software Engineer")
 
         features = np.array([[exp, emp, job, loc, size]])
         predicted = float(salary_model.predict(features)[0])
@@ -111,8 +129,6 @@ def predict_salary(req: SalaryRequest):
                 "company_size": req.company_size,
             },
         }
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -138,4 +154,5 @@ def predict_resume(req: ResumeRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5001)
+    port = int(os.environ.get("PORT", 5001))
+    uvicorn.run(app, host="0.0.0.0", port=port)

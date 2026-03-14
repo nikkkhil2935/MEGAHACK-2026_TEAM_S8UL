@@ -96,8 +96,24 @@ Perform a deep resume audit. Respond ONLY with a JSON object (no markdown, no ba
     const modelPrediction = mlResult.status === 'fulfilled' ? mlResult.value : null;
     const analysis = aiResult.status === 'fulfilled' ? aiResult.value : null;
 
+    if (mlResult.status === 'rejected') console.error('[Resume] ML model failed:', mlResult.reason?.message);
+    if (aiResult.status === 'rejected') console.error('[Resume] Groq AI failed:', aiResult.reason?.message);
+
     if (!analysis && !modelPrediction) {
+      const aiErr = aiResult.status === 'rejected' ? aiResult.reason : null;
+      if (aiErr?.code === 'RATE_LIMITED') {
+        return res.status(429).json({
+          error: `Rate limit reached. Please try again in ${aiErr.retryAfterSec || 60} seconds.`,
+          retryAfterSec: aiErr.retryAfterSec || 60,
+        });
+      }
       throw new Error('Both AI and ML model failed');
+    }
+
+    // Pass rate limit warning if AI failed but ML succeeded
+    let rateLimitWarning = null;
+    if (!analysis && aiResult.status === 'rejected' && aiResult.reason?.code === 'RATE_LIMITED') {
+      rateLimitWarning = `Groq AI rate limited. Try again in ${aiResult.reason.retryAfterSec || 60}s.`;
     }
 
     await supabase
@@ -112,9 +128,15 @@ Perform a deep resume audit. Respond ONLY with a JSON object (no markdown, no ba
         { onConflict: 'user_id' }
       );
 
-    res.json({ success: true, analysis, modelPrediction });
+    res.json({ success: true, analysis, modelPrediction, rateLimitWarning });
   } catch (err) {
     console.error('Resume improver error:', err);
+    if (err?.code === 'RATE_LIMITED') {
+      return res.status(429).json({
+        error: `Rate limit reached. Please try again in ${err.retryAfterSec || 60} seconds.`,
+        retryAfterSec: err.retryAfterSec || 60,
+      });
+    }
     res.status(500).json({ error: 'Failed to analyze resume' });
   }
 });
