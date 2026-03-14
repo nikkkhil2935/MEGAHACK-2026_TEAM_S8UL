@@ -257,7 +257,7 @@ export default function Interview() {
       stopCamera()
       setPhase('setup')
       const msg = err.response?.data?.error
-      if (err.response?.status === 401) {
+      if (err.response?.status === 401 && (msg === 'Invalid or expired token' || msg === 'No token provided')) {
         toast.error('Session expired. Please log in again.')
         navigate('/login')
       } else {

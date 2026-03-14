@@ -250,7 +250,7 @@ router.post('/merge-projects', authenticate, async (req, res) => {
       .from('github_analyses')
       .select('analysis')
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
 
     if (!ghData) {
       return res.status(400).json({ error: 'No GitHub analysis found' });
@@ -262,7 +262,7 @@ router.post('/merge-projects', authenticate, async (req, res) => {
       .from('candidate_profiles')
       .select('parsed_data')
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
 
     const existingParsed = profile?.parsed_data || {};
     const existingProjects = existingParsed.projects || [];
@@ -293,7 +293,7 @@ router.get('/latest', authenticate, async (req, res) => {
       .from('github_analyses')
       .select('*')
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
 
     res.json({
       analysis: data?.analysis || null,
@@ -312,7 +312,7 @@ router.get('/verified-skills', authenticate, async (req, res) => {
       .from('github_analyses')
       .select('analysis')
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
 
     res.json({ verifiedSkills: data?.analysis?.verifiedSkills || [] });
   } catch {

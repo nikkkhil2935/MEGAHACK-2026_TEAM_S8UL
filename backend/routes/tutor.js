@@ -36,10 +36,10 @@ router.post('/chat', authenticate, async (req, res) => {
     const { messages, mode = 'general', session_id, language } = req.body;
 
     const { data: profile } = await supabase.from('candidate_profiles')
-      .select('parsed_data').eq('user_id', req.user.id).single();
+      .select('parsed_data').eq('user_id', req.user.id).maybeSingle();
 
     const { data: userProfile } = await supabase.from('profiles')
-      .select('preferred_language').eq('id', req.user.id).single();
+      .select('preferred_language').eq('id', req.user.id).maybeSingle();
 
     const lang = language || userProfile?.preferred_language || 'en';
 
@@ -47,7 +47,8 @@ router.post('/chat', authenticate, async (req, res) => {
     if (session_id) {
       const { data: sess } = await supabase.from('tutor_chats')
         .select('context_docs').eq('id', session_id).single();
-      if (sess?.context_docs?.length) {
+      if (!sess) return res.status(404).json({ error: 'Session not found' });
+      if (sess.context_docs?.length) {
         docContext = '\n\nDOCUMENT CONTEXT (reference these when answering):\n' +
           sess.context_docs.map(d => `--- ${d.name} ---\n${d.text}`).join('\n\n');
       }
@@ -59,7 +60,8 @@ router.post('/chat', authenticate, async (req, res) => {
     if (session_id) {
       const { data: s } = await supabase.from('tutor_chats')
         .select('messages').eq('id', session_id).single();
-      const updated = [...(s?.messages || []), ...messages, {
+      if (!s) return res.status(404).json({ error: 'Session not found' });
+      const updated = [...(s.messages || []), ...messages, {
         role: 'assistant', content: reply, timestamp: new Date()
       }];
       await supabase.from('tutor_chats').update({
@@ -75,27 +77,42 @@ router.post('/chat', authenticate, async (req, res) => {
 });
 
 router.get('/sessions', authenticate, async (req, res) => {
-  const { data } = await supabase.from('tutor_chats')
-    .select('id, session_name, mode, updated_at')
-    .eq('user_id', req.user.id)
-    .order('updated_at', { ascending: false });
-  res.json(data || []);
+  try {
+    const { data } = await supabase.from('tutor_chats')
+      .select('id, session_name, mode, updated_at')
+      .eq('user_id', req.user.id)
+      .order('updated_at', { ascending: false });
+    res.json(data || []);
+  } catch (err) {
+    console.error('List sessions error:', err.message);
+    res.status(500).json({ error: 'Failed to list sessions' });
+  }
 });
 
 router.post('/sessions', authenticate, async (req, res) => {
-  const { data } = await supabase.from('tutor_chats').insert({
-    user_id:      req.user.id,
-    session_name: req.body.name || 'New Chat',
-    mode:         req.body.mode || 'general',
-    language:     req.body.language || 'en',
-  }).select().single();
-  res.json(data);
+  try {
+    const { data } = await supabase.from('tutor_chats').insert({
+      user_id:      req.user.id,
+      session_name: req.body.name || 'New Chat',
+      mode:         req.body.mode || 'general',
+      language:     req.body.language || 'en',
+    }).select().single();
+    res.json(data);
+  } catch (err) {
+    console.error('Create session error:', err.message);
+    res.status(500).json({ error: 'Failed to create session' });
+  }
 });
 
 router.delete('/sessions/:id', authenticate, async (req, res) => {
-  await supabase.from('tutor_chats')
-    .delete().eq('id', req.params.id).eq('user_id', req.user.id);
-  res.json({ deleted: true });
+  try {
+    await supabase.from('tutor_chats')
+      .delete().eq('id', req.params.id).eq('user_id', req.user.id);
+    res.json({ deleted: true });
+  } catch (err) {
+    console.error('Delete session error:', err.message);
+    res.status(500).json({ error: 'Failed to delete session' });
+  }
 });
 
 router.post('/upload-doc', authenticate, upload.single('document'), async (req, res) => {
@@ -126,8 +143,9 @@ router.post('/upload-doc', authenticate, upload.single('document'), async (req, 
     // Add to session's context_docs
     const { data: session } = await supabase.from('tutor_chats')
       .select('context_docs').eq('id', session_id).single();
+    if (!session) return res.status(404).json({ error: 'Session not found' });
 
-    const docs = [...(session?.context_docs || []), {
+    const docs = [...(session.context_docs || []), {
       name: req.file.originalname,
       text: docText,
       uploaded_at: new Date()
@@ -147,8 +165,9 @@ router.post('/suggest', authenticate, async (req, res) => {
     const { chat_id } = req.body;
     const { data: chat } = await supabase.from('tutor_chats')
       .select('document_text, context_docs').eq('id', chat_id).eq('user_id', req.user.id).single();
+    if (!chat) return res.status(404).json({ error: 'Chat not found' });
 
-    const docText = chat?.document_text || chat?.context_docs?.[0]?.text || '';
+    const docText = chat.document_text || chat.context_docs?.[0]?.text || '';
     if (!docText) return res.json({ questions: [] });
 
     const docPreview = docText.substring(0, 2000);

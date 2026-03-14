@@ -14,7 +14,7 @@ router.post('/analyze', authenticate, async (req, res) => {
       .from('candidate_profiles')
       .select('parsed_data')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error || !candidateProfile?.parsed_data) {
       return res.status(400).json({ error: 'No profile found. Upload your resume first.' });
@@ -150,7 +150,7 @@ router.get('/latest', authenticate, async (req, res) => {
       .eq('user_id', req.user.id)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     res.json({
       analysis: data?.analysis || null,

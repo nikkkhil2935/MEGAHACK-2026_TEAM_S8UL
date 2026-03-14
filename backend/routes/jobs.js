@@ -74,28 +74,33 @@ router.get('/:id', authenticate, async (req, res) => {
 
 // Create job posting (recruiter)
 router.post('/', authenticate, requireRole('recruiter'), async (req, res) => {
-  const { title, company, description, location, remote_policy, salary_range } = req.body;
+  try {
+    const { title, company, description, location, remote_policy, salary_range } = req.body;
 
-  const parsed = await groqJSON(
-    'You are a JD parser. Extract structured info. Return ONLY valid JSON.',
-    `Parse this job description:\n${description}
+    const parsed = await groqJSON(
+      'You are a JD parser. Extract structured info. Return ONLY valid JSON.',
+      `Parse this job description:\n${description}
 Return JSON:
 {
   title, required_skills:[{name,importance:"must"|"nice"}],
   nice_to_have:[{name}], tech_stack:[], experience_years:{min,max},
   job_category, responsibilities:[], salary_insights:{}
 }`
-  );
+    );
 
-  const { data } = await supabase.from('job_postings').insert({
-    recruiter_id: req.user.id, title, company, description,
-    parsed_data: parsed, required_skills: parsed.required_skills,
-    nice_to_have: parsed.nice_to_have, tech_stack: parsed.tech_stack,
-    experience_years: parsed.experience_years, job_category: parsed.job_category,
-    location, remote_policy, salary_range
-  }).select().single();
+    const { data } = await supabase.from('job_postings').insert({
+      recruiter_id: req.user.id, title, company, description,
+      parsed_data: parsed, required_skills: parsed.required_skills,
+      nice_to_have: parsed.nice_to_have, tech_stack: parsed.tech_stack,
+      experience_years: parsed.experience_years, job_category: parsed.job_category,
+      location, remote_policy, salary_range
+    }).select().single();
 
-  res.json(data);
+    res.json(data);
+  } catch (err) {
+    console.error('Create job error:', err);
+    res.status(500).json({ error: 'Failed to create job posting' });
+  }
 });
 
 // Apply
@@ -103,7 +108,7 @@ router.post('/:id/apply', authenticate, requireRole('candidate'), async (req, re
   try {
     const [{ data: job, error: jobErr }, { data: profile }] = await Promise.all([
       supabase.from('job_postings').select('*').eq('id', req.params.id).single(),
-      supabase.from('candidate_profiles').select('parsed_data').eq('user_id', req.user.id).single(),
+      supabase.from('candidate_profiles').select('parsed_data').eq('user_id', req.user.id).maybeSingle(),
     ]);
 
     if (jobErr || !job) {
@@ -129,7 +134,7 @@ router.post('/:id/apply', authenticate, requireRole('candidate'), async (req, re
     const io = req.app.get('io');
     if (io) {
       const { data: userProfile } = await supabase.from('profiles')
-        .select('full_name').eq('id', req.user.id).single();
+        .select('full_name').eq('id', req.user.id).maybeSingle();
       io.emit('new_application', {
         candidate_name: userProfile?.full_name || 'Someone',
         job_title: job.title,
@@ -147,12 +152,16 @@ router.post('/:id/apply', authenticate, requireRole('candidate'), async (req, re
 // Match score for specific job
 router.get('/match/:id', authenticate, async (req, res) => {
   try {
-    const [{ data: job }, { data: profile }] = await Promise.all([
+    const [{ data: job, error: jobErr }, { data: profile }] = await Promise.all([
       supabase.from('job_postings').select('*').eq('id', req.params.id).single(),
       supabase.from('candidate_profiles').select('parsed_data').eq('user_id', req.user.id).maybeSingle(),
     ]);
 
-    const match = await matchCandidateToJob(profile?.parsed_data || {}, job?.parsed_data || {});
+    if (jobErr || !job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    const match = await matchCandidateToJob(profile?.parsed_data || {}, job.parsed_data || {});
     res.json(match);
   } catch (err) {
     console.error('Match score error:', err.message);
@@ -182,40 +191,45 @@ router.get('/recruiter/my-jobs', authenticate, requireRole('recruiter'), async (
 
 // Recruiter: get applicants for a job
 router.get('/:id/applicants', authenticate, requireRole('recruiter'), async (req, res) => {
-  const { data: apps } = await supabase.from('applications')
-    .select('*, profiles:candidate_id(full_name, email)')
-    .eq('job_id', req.params.id).order('match_score', { ascending: false });
+  try {
+    const { data: apps } = await supabase.from('applications')
+      .select('*, profiles:candidate_id(full_name, email)')
+      .eq('job_id', req.params.id).order('match_score', { ascending: false });
 
-  const enriched = await Promise.all((apps || []).map(async (a) => {
-    // Fetch latest interview for this candidate
-    const { data: interview } = await supabase.from('interview_sessions')
-      .select('overall_score, integrity_events, report')
-      .eq('candidate_id', a.candidate_id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    const enriched = await Promise.all((apps || []).map(async (a) => {
+      // Fetch latest interview for this candidate
+      const { data: interview } = await supabase.from('interview_sessions')
+        .select('overall_score, integrity_events, report')
+        .eq('candidate_id', a.candidate_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    return {
-      id: a.id,
-      candidate_id: a.candidate_id,
-      name: a.profiles?.full_name,
-      email: a.profiles?.email,
-      match_score: a.match_score,
-      skills: a.match_data?.matching_skills || [],
-      experience: a.match_data?.experience_match,
-      applied_at: a.created_at,
-      interview: interview ? {
-        score: interview.overall_score,
-        tab_switches: (interview.integrity_events || []).filter(e => e.type === 'tab_switch').length,
-        eye_drifts: (interview.integrity_events || []).filter(e => e.type === 'eye_drift').length,
-        hire_recommendation: interview.report?.hire_recommendation,
-        top_strength: interview.report?.strengths?.[0],
-        confidence: interview.report?.confidence_level,
-      } : null,
-    };
-  }));
+      return {
+        id: a.id,
+        candidate_id: a.candidate_id,
+        name: a.profiles?.full_name,
+        email: a.profiles?.email,
+        match_score: a.match_score,
+        skills: a.match_data?.matching_skills || [],
+        experience: a.match_data?.experience_match,
+        applied_at: a.created_at,
+        interview: interview ? {
+          score: interview.overall_score,
+          tab_switches: (interview.integrity_events || []).filter(e => e.type === 'tab_switch').length,
+          eye_drifts: (interview.integrity_events || []).filter(e => e.type === 'eye_drift').length,
+          hire_recommendation: interview.report?.hire_recommendation,
+          top_strength: interview.report?.strengths?.[0],
+          confidence: interview.report?.confidence_level,
+        } : null,
+      };
+    }));
 
-  res.json(enriched);
+    res.json(enriched);
+  } catch (err) {
+    console.error('Get applicants error:', err);
+    res.status(500).json({ error: 'Failed to load applicants' });
+  }
 });
 
 // Almost qualified (55-74%)
@@ -246,12 +260,16 @@ router.get('/almost/qualified', authenticate, async (req, res) => {
 // AI Shortlist: rank top candidates with reasons
 router.post('/:id/shortlist', authenticate, requireRole('recruiter'), async (req, res) => {
   try {
-    const [{ data: job }, { data: apps }] = await Promise.all([
+    const [{ data: job, error: jobErr }, { data: apps }] = await Promise.all([
       supabase.from('job_postings').select('*').eq('id', req.params.id).single(),
       supabase.from('applications')
         .select('*, profiles:candidate_id(full_name, email), candidate_profiles:candidate_id(parsed_data)')
         .eq('job_id', req.params.id).order('match_score', { ascending: false })
     ]);
+
+    if (jobErr || !job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
 
     if (!apps?.length) return res.json({ shortlist: [], message: 'No applicants yet' });
 

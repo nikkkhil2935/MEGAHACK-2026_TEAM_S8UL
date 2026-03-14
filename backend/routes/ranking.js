@@ -41,12 +41,12 @@ router.post('/job/:jobId', authenticate, recruiterMiddleware, async (req, res) =
           supabase.from('profiles')
             .select('full_name')
             .eq('id', app.candidate_id)
-            .single()
+            .maybeSingle()
             .catch(() => ({ data: null })),
           supabase.from('candidate_profiles')
             .select('parsed_data')
             .eq('user_id', app.candidate_id)
-            .single()
+            .maybeSingle()
             .catch(() => ({ data: null })),
           supabase.from('interview_sessions')
             .select('overall_score')
@@ -152,9 +152,9 @@ router.get('/job/:jobId', authenticate, recruiterMiddleware, async (req, res) =>
       .from('candidate_rankings')
       .select('*')
       .eq('job_id', req.params.jobId)
-      .single();
+      .maybeSingle();
 
-    if (error) {
+    if (error || !data) {
       return res.json({ ranking: null });
     }
 
