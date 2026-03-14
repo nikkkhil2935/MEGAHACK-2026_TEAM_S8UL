@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Send, Smile, Search, MessageSquare, Check, CheckCheck, User, Mail, Briefcase, MapPin, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useAuthStore } from '../store/auth'
+import { connectSocket, disconnectSocket } from '../services/socket'
 
 const EMOJIS = ['😊', '👍', '🎉', '🔥', '💯', '🤝', '✨', '👏', '😄', '🙌', '💪', '🎯']
 
@@ -40,6 +42,7 @@ function timeAgo(dateStr) {
 
 export default function MessagingSchedulerGamified() {
   const { user } = useAuthStore()
+  const [searchParams] = useSearchParams()
   const [conversations, setConversations] = useState([])
   const [activeChat, setActiveChat] = useState(null)
   const [messages, setMessages] = useState([])
@@ -58,20 +61,52 @@ export default function MessagingSchedulerGamified() {
 
   const chatEndRef = useRef(null)
   const pollRef = useRef(null)
+  const startChatHandled = useRef(false)
 
   // Load conversations
   useEffect(() => {
     loadConversations()
   }, [])
 
-  // Poll for new messages every 5s
+  // Handle ?startChat=userId from job detail page
+  useEffect(() => {
+    const startChatId = searchParams.get('startChat')
+    if (startChatId && !startChatHandled.current && !loadingConvs) {
+      startChatHandled.current = true
+      setActiveChat(startChatId)
+      loadMessages(startChatId)
+    }
+  }, [searchParams, loadingConvs])
+
+  // Socket.IO for real-time messages + fallback polling
   useEffect(() => {
     if (!user?.id) return
+    const socket = connectSocket(user.id)
+
+    const handleNewMessage = (msg) => {
+      // If this message belongs to the active chat, append it
+      if (activeChat && (msg.sender_id === activeChat || msg.receiver_id === activeChat)) {
+        setMessages(prev => {
+          if (prev.find(m => m.id === msg.id)) return prev
+          return [...prev, msg]
+        })
+      }
+      // Refresh conversations to update last message + unread counts
+      loadConversations()
+    }
+
+    socket.on('new_message', handleNewMessage)
+
+    // Fallback polling every 10s (less aggressive since we have sockets)
     pollRef.current = setInterval(() => {
       loadConversations()
       if (activeChat) loadMessages(activeChat, true)
-    }, 5000)
-    return () => clearInterval(pollRef.current)
+    }, 10000)
+
+    return () => {
+      socket.off('new_message', handleNewMessage)
+      clearInterval(pollRef.current)
+    }
   }, [activeChat, user?.id])
 
   useEffect(() => {

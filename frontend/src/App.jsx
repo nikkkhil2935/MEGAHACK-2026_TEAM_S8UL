@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './store/auth'
 import { useThemeStore } from './store/theme'
+import { connectSocket, disconnectSocket } from './services/socket'
 import Navbar from './components/layout/Navbar'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
@@ -46,11 +47,21 @@ function RootRedirect() {
 }
 
 export default function App() {
-  const { token } = useAuthStore()
+  const { token, user } = useAuthStore()
 
   useEffect(() => {
     useThemeStore.getState().initTheme()
   }, [])
+
+  // Connect socket when user is logged in
+  useEffect(() => {
+    if (token && user?.id) {
+      connectSocket(user.id)
+    } else {
+      disconnectSocket()
+    }
+    return () => disconnectSocket()
+  }, [token, user?.id])
 
   return (
     <>

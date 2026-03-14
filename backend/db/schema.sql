@@ -213,6 +213,22 @@ CREATE INDEX idx_messages_sender ON messages(sender_id);
 CREATE INDEX idx_messages_receiver ON messages(receiver_id);
 CREATE INDEX idx_messages_created ON messages(created_at DESC);
 
+-- NOTIFICATIONS
+CREATE TABLE IF NOT EXISTS notifications (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id    UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  type       TEXT NOT NULL,
+  title      TEXT NOT NULL,
+  message    TEXT NOT NULL,
+  data       JSONB DEFAULT '{}',
+  read       BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id, read) WHERE read = FALSE;
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
+
 -- ROW LEVEL SECURITY (enable on ALL public tables)
 ALTER TABLE profiles             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE candidate_profiles   ENABLE ROW LEVEL SECURITY;
@@ -229,6 +245,7 @@ ALTER TABLE quiz_attempts        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE market_pulse         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE outreach_templates   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications        ENABLE ROW LEVEL SECURITY;
 
 -- POLICIES
 CREATE POLICY "Users see own profile" ON profiles
@@ -283,3 +300,6 @@ CREATE POLICY "Candidates see own templates" ON outreach_templates
 
 CREATE POLICY "Users see own messages" ON messages
   FOR ALL USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+
+CREATE POLICY "Users see own notifications" ON notifications
+  FOR ALL USING (auth.uid() = user_id);

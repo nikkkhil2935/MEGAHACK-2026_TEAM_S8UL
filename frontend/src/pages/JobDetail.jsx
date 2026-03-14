@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MapPin, ArrowLeft, Send, Map, MessageSquare, DollarSign, Clock, Briefcase, ChevronDown, ChevronUp, Mic } from 'lucide-react'
+import { MapPin, ArrowLeft, Send, Map, MessageSquare, DollarSign, Clock, Briefcase, ChevronDown, ChevronUp, Mic, Sparkles, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useGamificationStore } from '../store/gamification'
@@ -18,6 +18,7 @@ export default function JobDetail() {
   const [applied, setApplied] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [coverLetter, setCoverLetter] = useState('')
+  const [generatingCL, setGeneratingCL] = useState(false)
   const { awardXP } = useGamificationStore()
 
   useEffect(() => {
@@ -56,7 +57,30 @@ export default function JobDetail() {
       toast.error('Messaging is available for real job postings only.')
       return
     }
-    navigate('/messaging')
+    if (job?.recruiter_id) {
+      navigate(`/messaging?startChat=${job.recruiter_id}`)
+    } else {
+      navigate('/messaging')
+    }
+  }
+
+  const handleGenerateCoverLetter = async () => {
+    if (isMock) {
+      toast.error('AI generation is available for real job postings only.')
+      return
+    }
+    setGeneratingCL(true)
+    try {
+      const { data } = await api.post('/jobs/generate-cover-letter', { job_id: id })
+      if (data.cover_letter) {
+        setCoverLetter(data.cover_letter)
+        toast.success('Cover letter generated!')
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to generate cover letter')
+    } finally {
+      setGeneratingCL(false)
+    }
   }
 
   if (!job) return (
@@ -154,13 +178,23 @@ export default function JobDetail() {
                 <div className="glass-card p-6">
                   <h3 className="text-foreground font-semibold mb-3">Apply for {job.title}</h3>
                   <p className="text-gray-500 text-xs mb-4">Your profile and resume will be sent automatically. Add an optional cover letter below.</p>
-                  <textarea
-                    value={coverLetter}
-                    onChange={e => setCoverLetter(e.target.value)}
-                    rows={5}
-                    placeholder="Write a brief cover letter (optional) — explain why you're a great fit for this role..."
-                    className="input-field w-full resize-none mb-4"
-                  />
+                  <div className="relative mb-4">
+                    <textarea
+                      value={coverLetter}
+                      onChange={e => setCoverLetter(e.target.value)}
+                      rows={6}
+                      placeholder="Write a brief cover letter (optional) — explain why you're a great fit for this role..."
+                      className="input-field w-full resize-none"
+                    />
+                    <button
+                      onClick={handleGenerateCoverLetter}
+                      disabled={generatingCL}
+                      className="absolute top-2 right-2 flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 hover:to-purple-600 disabled:opacity-60 text-white rounded-lg text-xs font-semibold transition-all shadow-lg shadow-brand-500/20"
+                    >
+                      {generatingCL ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                      {generatingCL ? 'Generating...' : 'Generate with AI'}
+                    </button>
+                  </div>
                   <div className="flex items-center gap-3">
                     <button onClick={handleApply} disabled={applying}
                       className="btn-primary flex items-center gap-2 disabled:opacity-50">

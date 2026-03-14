@@ -64,6 +64,7 @@ app.use('/api/ranking', require('./routes/ranking'));
 app.use('/api/resume-improver', require('./routes/resumeImprover'));
 app.use('/api/github', require('./routes/github'));
 app.use('/api/messages', require('./routes/messages'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // Socket.io: Real-time interview events + messaging
 io.on('connection', (socket) => {
